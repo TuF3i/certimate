@@ -4,6 +4,7 @@ import { CA_PROVIDERS } from "@/domain/provider";
 import {
   type EmailsSettingsContent,
   type NotifyTemplateContent,
+  type OAuth2SettingsContent,
   type PersistenceSettingsContent,
   SETTINGS_NAMES,
   type SSLProviderSettingsContent,
@@ -23,6 +24,7 @@ interface SettingsContentMap {
   [SETTINGS_NAMES.SCRIPT_TEMPLATE]: ScriptTemplateContent;
   [SETTINGS_NAMES.SSL_PROVIDER]: SSLProviderSettingsContent;
   [SETTINGS_NAMES.PERSISTENCE]: PersistenceSettingsContent;
+  [SETTINGS_NAMES.OAUTH2]: OAuth2SettingsContent;
 }
 
 export const get = async <K extends SettingsNames | string, T extends NonNullable<unknown>>(
@@ -81,6 +83,13 @@ export const get = async <K extends SettingsNames | string, T extends NonNullabl
         (resp.content as PersistenceSettingsContent).certificatesWarningDaysBeforeExpire ??= 21;
         (resp.content as PersistenceSettingsContent).certificatesRetentionMaxDays ??= 0;
         (resp.content as PersistenceSettingsContent).workflowRunsRetentionMaxDays ??= 0;
+      }
+      break;
+
+    case SETTINGS_NAMES.OAUTH2:
+      {
+        resp.content ??= {};
+        (resp.content as OAuth2SettingsContent).providers ??= [];
       }
       break;
   }

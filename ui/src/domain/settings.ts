@@ -6,6 +6,7 @@ export const SETTINGS_NAMES = Object.freeze({
   SCRIPT_TEMPLATE: "scriptTemplate",
   SSL_PROVIDER: "sslProvider",
   PERSISTENCE: "persistence",
+  OAUTH2: "oauth2",
 } as const);
 
 export type SettingsNames = (typeof SETTINGS_NAMES)[keyof typeof SETTINGS_NAMES];
@@ -55,5 +56,28 @@ export type PersistenceSettingsContent = {
   certificatesWarningDaysBeforeExpire?: number;
   certificatesRetentionMaxDays?: number;
   workflowRunsRetentionMaxDays?: number;
+};
+// #endregion
+
+// #region Settings: OAuth2
+export interface OAuth2ProviderConfig {
+  name: string;
+  displayName?: string;
+  enabled?: boolean;
+  clientId?: string;
+  clientSecret?: string;
+  scopes?: string[];
+  redirectUrl?: string;
+  authUrl?: string;
+  tokenUrl?: string;
+  userInfoUrl?: string;
+  subjectField?: string;
+  scopesJoin?: string;
+  autoCreate?: boolean;
+  autoCreatePrefix?: string;
+}
+
+export type OAuth2SettingsContent = {
+  providers?: OAuth2ProviderConfig[];
 };
 // #endregion
