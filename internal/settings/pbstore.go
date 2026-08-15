@@ -30,6 +30,16 @@ func GetGlobalSettingsForPersistence() domain.SettingsContentForPersistence {
 	return *content.(domain.SettingsContent).AsPersistence()
 }
 
+func GetGlobalSettingsForOAuth2() domain.SettingsContentForOAuth2 {
+	pb := app.GetApp()
+	name := domain.SettingsNameOAuth2
+	content := pb.Store().Get(buildPbStoreKey(name))
+	if content == nil {
+		content = domain.SettingsContent{}
+	}
+	return *content.(domain.SettingsContent).AsOAuth2()
+}
+
 func registerSettingsStoreByName(settingsName string) error {
 	settingsRepo := repository.NewSettingsRepository()
 	settings, err := settingsRepo.GetByName(context.Background(), settingsName)
