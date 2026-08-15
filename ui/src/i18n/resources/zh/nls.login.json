@@ -13,5 +13,10 @@
     "submit": {
       "button": "登录"
     }
+  },
+
+  "oauth2": {
+    "divider": "或",
+    "sign_in_with": "使用 {{provider}} 登录"
   }
 }

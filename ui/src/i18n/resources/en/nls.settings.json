@@ -5,6 +5,31 @@
     "heading": "Settings"
   },
 
+  "oauth2": {
+    "tab": "OAuth2",
+    "providers": {
+      "title": "OAuth2 Providers",
+      "add_preset": "Add {{provider}}",
+      "tips": "Configure one or more OAuth2 identity providers to enable the corresponding Sign-in buttons on the login page. Both the authoritative endpoints and field mapping fall back to built-in presets when left blank.",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "form": {
+        "enabled": { "label": "Enabled" },
+        "display_name": { "label": "Display Name" },
+        "client_id": { "label": "Client ID" },
+        "client_secret": { "label": "Client Secret" },
+        "redirect_url": { "label": "Redirect URL" },
+        "scopes": { "label": "Scopes (space separated)" },
+        "auth_url": { "label": "Authorization URL", "placeholder": "Leave empty to use preset" },
+        "token_url": { "label": "Token URL", "placeholder": "Leave empty to use preset" },
+        "user_info_url": { "label": "UserInfo URL", "placeholder": "Leave empty to use preset" },
+        "subject_field": { "label": "Subject field name (optional)" },
+        "auto_create": { "label": "Auto-create superuser on first sign-in" },
+        "auto_create_prefix": { "label": "Email prefix for auto-created accounts" }
+      }
+    }
+  },
+
   "account": {
     "tab": "Account",
     "username": {

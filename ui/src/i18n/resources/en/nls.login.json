@@ -13,5 +13,10 @@
     "submit": {
       "button": "Log-in"
     }
+  },
+
+  "oauth2": {
+    "divider": "or",
+    "sign_in_with": "Sign in with {{provider}}"
   }
 }

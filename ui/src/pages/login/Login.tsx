@@ -1,8 +1,8 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { IconArrowRight, IconLock, IconMail } from "@tabler/icons-react";
-import { App, Button, Card, Divider, Form, Input, Space } from "antd";
+import { IconArrowRight, IconBrandGithub, IconLock, IconMail } from "@tabler/icons-react";
+import { App, Button, Card, Divider, Form, Input, Space, Typography } from "antd";
 import { createSchemaFieldRule } from "antd-zod";
 import { z } from "zod";
 
@@ -12,6 +12,7 @@ import AppTheme from "@/components/AppTheme";
 import AppVersion from "@/components/AppVersion";
 import { useAntdForm, useBrowserTheme } from "@/hooks";
 import { authWithPassword } from "@/repository/admin";
+import { type OAuth2Provider, consumeOAuth2Callback, listOAuth2Providers, startOAuth2Login } from "@/repository/oauth2";
 import { unwrapErrMsg } from "@/utils/error";
 import { withBasePath } from "@/utils/url";
 
@@ -22,6 +23,26 @@ const Login = () => {
 
   const { notification } = App.useApp();
   const { theme: browserTheme } = useBrowserTheme();
+  const [oauth2Providers, setOauth2Providers] = useState<OAuth2Provider[]>([]);
+
+  // 1. 初进入时检查后端是否在设置中启用了 OAuth2 提供商。
+  // 2. 如果 URL 有 oauth2_token 查询，则消费它并完成登录。
+  useEffect(() => {
+    (async () => {
+      try {
+        const list = await listOAuth2Providers();
+        setOauth2Providers(list);
+      } catch (err) {
+        // 忽略明确的 401/404（后端未启用 OAuth2），仅在可观察错误时推入提示。
+        console.warn("[certimate] failed to list OAuth2 providers:", err);
+      }
+
+      const consumed = await consumeOAuth2Callback();
+      if (consumed) {
+        navigage("/", { replace: true });
+      }
+    })();
+  }, [navigage]);
 
   const bgStyle = useMemo<React.CSSProperties>(() => {
     let svg = "";
@@ -39,6 +60,13 @@ const Login = () => {
       maskImage: `linear-gradient(to bottom right, transparent, ${mask}, transparent)`,
     };
   }, [browserTheme]);
+
+  const renderOAuth2ProviderIcon = (name: string) => {
+    if (name === "github") {
+      return <IconBrandGithub size="1.25em" />;
+    }
+    return null;
+  };
 
   const formSchema = z.object({
     username: z.email(),
@@ -102,6 +130,30 @@ const Login = () => {
                 </Button>
               </Form.Item>
             </Form>
+
+            {oauth2Providers.length > 0 ? (
+              <>
+                <div className="my-6">
+                  <Divider plain>
+                    <Typography.Text type="secondary">{t("login.oauth2.divider")}</Typography.Text>
+                  </Divider>
+                </div>
+
+                <Space direction="vertical" className="w-full" size="middle">
+                  {oauth2Providers.map((p) => (
+                    <Button
+                      key={p.name}
+                      block
+                      size="large"
+                      icon={renderOAuth2ProviderIcon(p.name) || undefined}
+                      onClick={() => startOAuth2Login(p.name, window.location.pathname)}
+                    >
+                      {t("login.oauth2.sign_in_with", { provider: p.displayName || p.name })}
+                    </Button>
+                  ))}
+                </Space>
+              </>
+            ) : null}
 
             <div className="mt-12">
               <div className="block max-sm:hidden">
