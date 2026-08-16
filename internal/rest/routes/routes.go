@@ -35,7 +35,9 @@ func BindRouter(router *router.Router[*core.RequestEvent]) {
 	notifySvc = notify.NewNotifyService(accessRepo)
 
 	authApiGroup := router.Group("/api")
-	authApiGroup.Bind(apis.RequireSuperuserAuth())
+	// 多用户模式：超级管理员（_superusers）与成员（users）均可访问业务接口。
+	// settings 等仅管理员可访问的集合规则已在迁移中单独收紧。
+	authApiGroup.Bind(apis.RequireAuth())
 	handlers.NewCertificatesHandler(authApiGroup, certificateSvc)
 	handlers.NewWorkflowsHandler(authApiGroup, workflowSvc)
 	handlers.NewStatisticsHandler(authApiGroup, statisticsSvc)
