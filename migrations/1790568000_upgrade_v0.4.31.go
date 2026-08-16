@@ -78,20 +78,20 @@ func init() {
 
 		// pre-create empty `settings` row for `oauth2`
 		{
-			if _, err := app.FindFirstRecordByFilter(domain.CollectionNameSettings, "name={:name}", dbx.Params{"name": domain.SettingsNameOAuth2}); err != nil {
+			if _, err := app.FindFirstRecordByFilter(domain.CollectionNameSettings, "name={:name}", dbx.Params{"name": "oauth2"}); err != nil {
 				settingsCollection, err := app.FindCollectionByNameOrId(domain.CollectionNameSettings)
 				if err != nil {
 					return err
 				}
 
 				record := core.NewRecord(settingsCollection)
-				record.Set("name", domain.SettingsNameOAuth2)
+				record.Set("name", "oauth2")
 				record.Set("content", domain.SettingsContent{"providers": []any{}})
 				if err := app.Save(record); err != nil {
 					return err
 				}
 
-				tracer.Printf("settings '%s' initialized", domain.SettingsNameOAuth2)
+				tracer.Printf("settings '%s' initialized", "oauth2")
 			}
 		}
 

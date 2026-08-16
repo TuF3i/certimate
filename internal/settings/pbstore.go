@@ -30,14 +30,14 @@ func GetGlobalSettingsForPersistence() domain.SettingsContentForPersistence {
 	return *content.(domain.SettingsContent).AsPersistence()
 }
 
-func GetGlobalSettingsForOAuth2() domain.SettingsContentForOAuth2 {
+func GetGlobalSettingsForSSO() domain.SettingsContentForSSO {
 	pb := app.GetApp()
-	name := domain.SettingsNameOAuth2
+	name := domain.SettingsNameSSO
 	content := pb.Store().Get(buildPbStoreKey(name))
 	if content == nil {
 		content = domain.SettingsContent{}
 	}
-	return *content.(domain.SettingsContent).AsOAuth2()
+	return *content.(domain.SettingsContent).AsSSO()
 }
 
 func registerSettingsStoreByName(settingsName string) error {

@@ -7,9 +7,9 @@ import (
 
 	"github.com/certimate-go/certimate/internal/certificate"
 	"github.com/certimate-go/certimate/internal/notify"
-	"github.com/certimate-go/certimate/internal/oauth2"
 	"github.com/certimate-go/certimate/internal/repository"
 	"github.com/certimate-go/certimate/internal/rest/handlers"
+	"github.com/certimate-go/certimate/internal/sso"
 	"github.com/certimate-go/certimate/internal/statistics"
 	"github.com/certimate-go/certimate/internal/workflow"
 )
@@ -43,10 +43,9 @@ func BindRouter(router *router.Router[*core.RequestEvent]) {
 	handlers.NewStatisticsHandler(authApiGroup, statisticsSvc)
 	handlers.NewNotificationsHandler(authApiGroup, notifySvc)
 
-	// OAuth2 公共路由不在 /api 的 superuser auth 之下注册，
-	// 避免跳转与回调被 401。9669 /api/oauth2/* 下仍属于顶层 Router。
-	oauth2Svc := oauth2.NewService()
-	handlers.NewOAuth2Handler(router, oauth2Svc)
+	// SSO 公共路由（OIDC 跳转/回调、LDAP 登录）不在 /api 鉴权组之下注册，登录前必须可达。
+	ssoSvc := sso.NewService()
+	handlers.NewSSOHandler(router, ssoSvc)
 
 	// 统一登录端点：自动区分超级管理员与成员，同样不挂鉴权中间件。
 	handlers.NewAuthHandler(router)

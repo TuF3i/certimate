@@ -9,6 +9,6 @@ func Setup() {
 
 	registerSettingsStoreByName(domain.SettingsNameSSLProvider)
 	registerSettingsStoreByName(domain.SettingsNamePersistence)
-	registerSettingsStoreByName(domain.SettingsNameOAuth2)
+	registerSettingsStoreByName(domain.SettingsNameSSO)
 	registerSettingsRecordEvents()
 }

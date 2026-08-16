@@ -18,7 +18,7 @@ const (
 	SettingsNameScriptTemplate       = "scriptTemplate"
 	SettingsNameSSLProvider          = "sslProvider"
 	SettingsNamePersistence          = "persistence"
-	SettingsNameOAuth2               = "oauth2"
+	SettingsNameSSO                  = "sso"
 )
 
 type SettingsContent map[string]any
@@ -69,36 +69,64 @@ func (c SettingsContent) AsPersistence() *SettingsContentForPersistence {
 	return content
 }
 
-// 表示 OAuth2 登录的全局设置数据结构。
-type SettingsContentForOAuth2 struct {
-	Providers []SettingsContentForOAuth2Provider `json:"providers"`
+// 表示单点登录（SSO）的全局设置数据结构。
+// OIDC 与 LDAP 各支持一个提供者配置。
+type SettingsContentForSSO struct {
+	OIDC *SettingsContentForSSOOIDC `json:"oidc,omitempty"`
+	LDAP *SettingsContentForSSOLDAP `json:"ldap,omitempty"`
 }
 
-type SettingsContentForOAuth2Provider struct {
-	Name             string   `json:"name"`        // 提供商标识符，如 "github"、"google"
-	DisplayName      string   `json:"displayName"` // 展示名称，如 "GitHub"
+// SettingsContentForSSOOIDC 表示标准 OIDC 提供者配置。
+type SettingsContentForSSOOIDC struct {
 	Enabled          bool     `json:"enabled"`
+	DisplayName      string   `json:"displayName,omitempty"` // 登录页按钮展示名，零值时默认 "OIDC"
 	ClientID         string   `json:"clientId"`
 	ClientSecret     string   `json:"clientSecret"`
-	Scopes           []string `json:"scopes"`
-	RedirectURL      string   `json:"redirectUrl"`      // 完整的回调地址，形如 https://your-host/api/oauth2/callback?provider=github
-	AuthURL          string   `json:"authUrl"`          // 授权端点；为空时按预设填充
-	TokenURL         string   `json:"tokenUrl"`         // Token 端点；为空时按预设填充
-	UserInfoURL      string   `json:"userInfoUrl"`      // UserInfo 端点；为空时按预设填充
-	SubjectField     string   `json:"subjectField"`     // 从 UserInfo JSON 中读取的主键字段；零值时按预设填充
-	ScopesJoin       string   `json:"scopesJoin"`       // 部分提供商（如微信）的 scope 使用空格或逗号连接，控制请求拼接分隔符
-	AutoCreate       bool     `json:"autoCreate"`       // 若关联不存在，是否自动创建超级管理员账户（默认仅以管理员身份预置）
-	AutoCreatePrefix string   `json:"autoCreatePrefix"` // 自动创建超级管理员账户时的邮箱前缀
+	DiscoveryURL     string   `json:"discoveryUrl"`               // OIDC Discovery 端点，如 https://auth.example.com/.well-known/openid-configuration
+	Scopes           []string `json:"scopes"`                     // 零值时默认 ["openid", "email", "profile"]
+	AutoCreate       bool     `json:"autoCreate"`                 // 首次登录无绑定时是否自动创建普通用户
+	AutoCreatePrefix string   `json:"autoCreatePrefix,omitempty"` // 占位邮箱前缀（用户信息缺邮箱时）
 }
 
-func (c SettingsContent) AsOAuth2() *SettingsContentForOAuth2 {
-	content := &SettingsContentForOAuth2{}
+// SettingsContentForSSOLDAP 表示 LDAP 提供者配置。
+type SettingsContentForSSOLDAP struct {
+	Enabled          bool   `json:"enabled"`
+	DisplayName      string `json:"displayName,omitempty"`      // 登录页表单标题，零值时默认 "LDAP"
+	ServerURL        string `json:"serverUrl"`                  // 如 ldap://host:389 或 ldaps://host:636
+	BindDN           string `json:"bindDn"`                     // 用于搜索用户的服务账号 DN
+	BindPassword     string `json:"bindPassword"`               // 服务账号密码
+	SearchBase       string `json:"searchBase"`                 // 用户搜索基 DN
+	SearchFilter     string `json:"searchFilter"`               // 搜索过滤器，{{username}} 为登录用户名占位符，零值时默认 (uid={{username}})
+	EmailAttribute   string `json:"emailAttribute,omitempty"`   // 邮箱属性名，零值时默认 "mail"
+	NameAttribute    string `json:"nameAttribute,omitempty"`    // 显示名属性名，零值时默认 "displayName"
+	AutoCreate       bool   `json:"autoCreate"`                 // 首次登录无绑定时是否自动创建普通用户
+	AutoCreatePrefix string `json:"autoCreatePrefix,omitempty"` // 占位邮箱前缀
+}
+
+func (c SettingsContent) AsSSO() *SettingsContentForSSO {
+	content := &SettingsContentForSSO{}
 	xmaps.Populate(c, content)
 
-	for i := range content.Providers {
-		p := &content.Providers[i]
-		if p.DisplayName == "" {
-			p.DisplayName = p.Name
+	if content.OIDC != nil {
+		if content.OIDC.DisplayName == "" {
+			content.OIDC.DisplayName = "OIDC"
+		}
+		if len(content.OIDC.Scopes) == 0 {
+			content.OIDC.Scopes = []string{"openid", "email", "profile"}
+		}
+	}
+	if content.LDAP != nil {
+		if content.LDAP.DisplayName == "" {
+			content.LDAP.DisplayName = "LDAP"
+		}
+		if content.LDAP.SearchFilter == "" {
+			content.LDAP.SearchFilter = "(uid={{username}})"
+		}
+		if content.LDAP.EmailAttribute == "" {
+			content.LDAP.EmailAttribute = "mail"
+		}
+		if content.LDAP.NameAttribute == "" {
+			content.LDAP.NameAttribute = "displayName"
 		}
 	}
 
