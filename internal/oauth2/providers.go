@@ -107,6 +107,18 @@ var providerPresets = map[string]*ProviderPreset{
 		NameField:    "nick",
 		AvatarField:  "avatarUrl",
 	},
+	// Authentik 是自托管的 identity provider，端点 URL 与部署实例 + 应用 slug 相关，
+	// 因此此处只出厂 OIDC 标准的 scope 与字段映射；管理员必须显式填入 3 个端点。
+	// 端点格式示例：https://<your-authentik-host>/application/o/<application-slug>/[authorize|token|userinfo]/
+	"authentik": {
+		Name:         "authentik",
+		DisplayName:  "Authentik",
+		Scopes:       []string{"openid", "email", "profile"},
+		SubjectField: "sub",
+		EmailField:   "email",
+		NameField:    "preferred_username",
+		AvatarField:  "picture",
+	},
 }
 
 // LookupPreset 返回某 provider 的默认预设；不存在时返回 nil。

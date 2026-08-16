@@ -134,6 +134,10 @@ func (s *Service) BuildAuthorizeURL(ctx context.Context, providerName, redirectO
 	if redirectURL == "" {
 		return "", fmt.Errorf("oauth2 provider %q is missing redirectUrl", providerName)
 	}
+	if provider.Settings.AuthURL == "" {
+		// 自托管的 OAuth2/OIDC 提供商（如 Authentik）端点不在内设预设中，管理员必须显式填入。
+		return "", fmt.Errorf("oauth2 provider %q is missing authUrl (required for self-hosted providers)", providerName)
+	}
 
 	scopes := provider.Settings.Scopes
 	params := url.Values{}
@@ -176,6 +180,13 @@ func (s *Service) HandleCallback(ctx context.Context, providerName, code, state,
 	}
 	if code == "" {
 		return nil, "", errors.New("missing authorization code")
+	}
+	// 对自托管提供商（如 Authentik），管理员可能遗漏了某个端点；提前给出明确错误，避免走到 HTTP 底层报错。
+	if provider.Settings.TokenURL == "" {
+		return nil, "", fmt.Errorf("oauth2 provider %q is missing tokenUrl", providerName)
+	}
+	if provider.Settings.UserInfoURL == "" {
+		return nil, "", fmt.Errorf("oauth2 provider %q is missing userInfoUrl", providerName)
 	}
 
 	token, err := s.exchangeCode(ctx, provider, code, redirectOverride)
