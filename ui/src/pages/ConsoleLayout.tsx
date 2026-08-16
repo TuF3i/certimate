@@ -28,6 +28,7 @@ import { APP_DOCUMENT_URL, APP_REPO_URL } from "@/domain/app";
 import { useAntdForm, useTriggerElement } from "@/hooks";
 import { getAuthStore } from "@/repository/admin";
 import { authWithPassword, updatePassword } from "@/repository/user";
+import { isAdmin } from "@/utils/auth";
 import { isBrowserHappy } from "@/utils/browser";
 import { unwrapErrMsg } from "@/utils/error";
 import { withBasePath } from "@/utils/url";
@@ -60,7 +61,7 @@ const ConsoleLayout = () => {
   if (!auth.isValid) {
     return <Navigate to="/login" />;
   }
-  const isMember = !auth.isSuperuser;
+  const isMember = !isAdmin();
 
   return (
     <Layout className="h-screen bg-background text-foreground">
@@ -204,17 +205,20 @@ const SiderMenu = memo(({ collapsed, onSelect }: { collapsed?: boolean; onSelect
   const MENU_KEY_ACCESSES = "/accesses";
   const MENU_KEY_PRESETS = "/presets";
   const MENU_KEY_SETTINGS = "/settings";
-  // 设置菜单仅超级管理员可见。
-  const isSuperuser = getAuthStore().isSuperuser;
+  // 设置/授权凭据/预设模板仅管理员可见。
+  const admin = isAdmin();
   const menuItems: Required<MenuProps>["items"] = (
     [
       [MENU_KEY_HOME, "dashboard.page.heading", <IconHome size="1em" />],
       [MENU_KEY_WORKFLOWS, "workflow.page.heading", <IconHierarchy3 size="1em" />],
       [MENU_KEY_CERTIFICATES, "certificate.page.heading", <IconCertificate size="1em" />],
-      [MENU_KEY_ACCESSES, "access.page.heading", <IconFingerprint size="1em" />],
-      [MENU_KEY_PRESETS, "preset.page.heading", <IconCodeDots size="1em" />],
-      // 设置菜单仅超级管理员可见。
-      ...(isSuperuser ? [[MENU_KEY_SETTINGS, "settings.page.heading", <IconSettings size="1em" />]] : []),
+      ...(admin
+        ? [
+            [MENU_KEY_ACCESSES, "access.page.heading", <IconFingerprint size="1em" />],
+            [MENU_KEY_PRESETS, "preset.page.heading", <IconCodeDots size="1em" />],
+            [MENU_KEY_SETTINGS, "settings.page.heading", <IconSettings size="1em" />],
+          ]
+        : []),
     ] as Array<[string, string, React.ReactNode]>
   ).map(([key, label, icon]) => {
     return {

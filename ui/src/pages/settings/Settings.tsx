@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { IconDatabaseCog, IconHeartRateMonitor, IconInfoCircle, IconKey, IconPalette, IconPlugConnected, IconUserShield, IconUsers } from "@tabler/icons-react";
+import { IconDatabaseCog, IconHeartRateMonitor, IconInfoCircle, IconKey, IconPalette, IconPlugConnected, IconUsers } from "@tabler/icons-react";
 import { Menu } from "antd";
 
 const Settings = () => {
@@ -11,9 +11,8 @@ const Settings = () => {
   const { t } = useTranslation();
 
   const menus = [
-    ["account", "settings.account.tab", <IconUserShield size="1em" />],
-    ["appearance", "settings.appearance.tab", <IconPalette size="1em" />],
     ["users", "settings.users.tab", <IconUsers size="1em" />],
+    ["appearance", "settings.appearance.tab", <IconPalette size="1em" />],
     ["ssl-provider", "settings.sslprovider.tab", <IconPlugConnected size="1em" />],
     ["persistence", "settings.persistence.tab", <IconDatabaseCog size="1em" />],
     ["oauth2", "settings.oauth2.tab", <IconKey size="1em" />],
@@ -24,7 +23,7 @@ const Settings = () => {
   useEffect(() => {
     const subpath = location.pathname.split("/")[2];
     if (!subpath) {
-      navigate("/settings/account");
+      navigate("/settings/users");
       return;
     }
 

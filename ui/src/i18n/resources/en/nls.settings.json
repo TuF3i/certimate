@@ -8,7 +8,7 @@
   "users": {
     "tab": "Users",
     "title": "User Management",
-    "tips": "Only the administrator can create or manage member accounts. Members share the same certificates, workflows and authorized resources as the administrator.",
+    "tips": "Only administrators can manage accounts and grant workflows. Members can only see the workflows (and their certificates) explicitly granted to them.",
     "create": {
       "button": "Create User",
       "title": "Create User",
@@ -18,14 +18,49 @@
       "title": "Reset Password: {{email}}",
       "submit": "Reset"
     },
+    "my_account": {
+      "title": "My Account",
+      "email": "Email:",
+      "password": {
+        "button": "Change password",
+        "form": {
+          "old_password": {
+            "label": "Current password",
+            "placeholder": "Please enter the current password"
+          },
+          "new_password": {
+            "label": "New password",
+            "placeholder": "Please enter the new password"
+          },
+          "confirm": {
+            "label": "Confirm password",
+            "placeholder": "Please enter the new password again",
+            "errmsg": {
+              "not_matched": "The two passwords do not match"
+            }
+          }
+        }
+      }
+    },
+    "members": {
+      "title": "Members"
+    },
+    "grant": {
+      "title": "Grant Workflows: {{email}}",
+      "unassigned": "Not granted",
+      "assigned": "Granted"
+    },
     "table": {
       "email": "Email",
       "name": "Name",
-      "verified": "Verified",
-      "verified_yes": "Yes",
-      "verified_no": "No",
+      "role": "Role",
+      "role_admin": "Administrator",
+      "role_user": "Member",
       "actions": "Actions",
+      "grant": "Grant Workflows",
       "reset_password": "Reset Password",
+      "promote": "Make Admin",
+      "demote": "Remove Admin",
       "delete": "Delete",
       "delete_confirm": "Are you sure you want to delete this user?"
     },
@@ -41,7 +76,7 @@
       "password": {
         "label": "Initial Password",
         "placeholder": "Please enter password (at least 10 characters)",
-        "help": "At least 10 characters. The member can change it later from <b>Account</b> settings after signing in."
+        "help": "At least 10 characters. The member can change it later from <b>User Management</b> after signing in."
       }
     }
   },

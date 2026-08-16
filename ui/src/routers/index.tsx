@@ -11,7 +11,6 @@ import Login from "@/pages/login/Login";
 import PresetList from "@/pages/presets/PresetList";
 import Settings from "@/pages/settings/Settings";
 import SettingsAbout from "@/pages/settings/SettingsAbout";
-import SettingsAccount from "@/pages/settings/SettingsAccount";
 import SettingsAppearance from "@/pages/settings/SettingsAppearance";
 import SettingsDiagnostics from "@/pages/settings/SettingsDiagnostics";
 import SettingsOAuth2 from "@/pages/settings/SettingsOAuth2";
@@ -76,16 +75,12 @@ export const router = createHashRouter([
         element: <Settings />,
         children: [
           {
-            path: "/settings/account",
-            element: <SettingsAccount />,
+            path: "/settings/users",
+            element: <SettingsUsers />,
           },
           {
             path: "/settings/appearance",
             element: <SettingsAppearance />,
-          },
-          {
-            path: "/settings/users",
-            element: <SettingsUsers />,
           },
           {
             path: "/settings/ssl-provider",

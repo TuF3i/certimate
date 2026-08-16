@@ -8,7 +8,7 @@
   "users": {
     "tab": "用户",
     "title": "用户管理",
-    "tips": "只有管理员可以创建和管理成员账号。成员与管理员共享同一份证书、工作流与授权资源。",
+    "tips": "仅管理员可以管理账号与授权工作流。普通成员只能看到被明确授权给其的工作流及其证书。",
     "create": {
       "button": "创建用户",
       "title": "创建用户",
@@ -18,14 +18,49 @@
       "title": "重置密码：{{email}}",
       "submit": "重置"
     },
+    "my_account": {
+      "title": "我的账号",
+      "email": "邮箱：",
+      "password": {
+        "button": "修改密码",
+        "form": {
+          "old_password": {
+            "label": "当前密码",
+            "placeholder": "请输入当前密码"
+          },
+          "new_password": {
+            "label": "新密码",
+            "placeholder": "请输入新密码"
+          },
+          "confirm": {
+            "label": "确认新密码",
+            "placeholder": "请再次输入新密码",
+            "errmsg": {
+              "not_matched": "两次输入的密码不一致"
+            }
+          }
+        }
+      }
+    },
+    "members": {
+      "title": "成员"
+    },
+    "grant": {
+      "title": "工作流授权：{{email}}",
+      "unassigned": "未授权",
+      "assigned": "已授权"
+    },
     "table": {
       "email": "邮箱",
       "name": "显示名",
-      "verified": "已验证",
-      "verified_yes": "是",
-      "verified_no": "否",
+      "role": "角色",
+      "role_admin": "管理员",
+      "role_user": "成员",
       "actions": "操作",
+      "grant": "工作流授权",
       "reset_password": "重置密码",
+      "promote": "设为管理员",
+      "demote": "取消管理员",
       "delete": "删除",
       "delete_confirm": "确定要删除该用户吗？"
     },
@@ -41,7 +76,7 @@
       "password": {
         "label": "初始密码",
         "placeholder": "请输入密码（至少 10 位）",
-        "help": "至少 10 位。成员登录后可在 <b>设置 → 账号</b> 中自行修改。"
+        "help": "至少 10 位。成员登录后可在 <b>用户管理</b> 中自行修改。"
       }
     }
   },
