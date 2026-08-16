@@ -69,15 +69,21 @@ func init() {
 		}
 
 		// workflow 集合增加 grantedUsers 多选 relation（指向 users），用于工作流粒度授权。
+		// 注意：RelationField.CollectionId 必须为目标集合的 ID（非名字）。
 		{
 			collection, err := app.FindCollectionByNameOrId(domain.CollectionNameWorkflow)
 			if err != nil {
 				return err
 			}
 			if collection.Fields.GetByName("grantedUsers") == nil {
+				usersCollection, err := app.FindCollectionByNameOrId("users")
+				if err != nil {
+					return err
+				}
+
 				collection.Fields.Add(&core.RelationField{
 					Name:         "grantedUsers",
-					CollectionId: "users",
+					CollectionId: usersCollection.Id,
 					MaxSelect:    999,
 					MinSelect:    0,
 				})
