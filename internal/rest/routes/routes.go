@@ -47,4 +47,7 @@ func BindRouter(router *router.Router[*core.RequestEvent]) {
 	// 避免跳转与回调被 401。9669 /api/oauth2/* 下仍属于顶层 Router。
 	oauth2Svc := oauth2.NewService()
 	handlers.NewOAuth2Handler(router, oauth2Svc)
+
+	// 统一登录端点：自动区分超级管理员与成员，同样不挂鉴权中间件。
+	handlers.NewAuthHandler(router)
 }

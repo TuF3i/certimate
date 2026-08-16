@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { IconArrowRight, IconBrandGithub, IconLock, IconMail, IconShieldHalf, IconUser } from "@tabler/icons-react";
-import { App, Button, Card, Divider, Form, Input, Segmented, Space, Typography } from "antd";
+import { IconArrowRight, IconBrandGithub, IconLock, IconMail } from "@tabler/icons-react";
+import { App, Button, Card, Divider, Form, Input, Space, Typography } from "antd";
 import { createSchemaFieldRule } from "antd-zod";
 import { z } from "zod";
 
@@ -11,13 +11,10 @@ import AppLocale from "@/components/AppLocale";
 import AppTheme from "@/components/AppTheme";
 import AppVersion from "@/components/AppVersion";
 import { useAntdForm, useBrowserTheme } from "@/hooks";
-import { authWithPassword as authAdminWithPassword } from "@/repository/admin";
+import { loginWithPassword } from "@/repository/auth";
 import { type OAuth2Provider, consumeOAuth2Callback, listOAuth2Providers, startOAuth2Login } from "@/repository/oauth2";
-import { authWithPassword as authUserWithPassword } from "@/repository/user";
 import { unwrapErrMsg } from "@/utils/error";
 import { withBasePath } from "@/utils/url";
-
-type LoginRole = "admin" | "user";
 
 const Login = () => {
   const navigage = useNavigate();
@@ -27,7 +24,6 @@ const Login = () => {
   const { notification } = App.useApp();
   const { theme: browserTheme } = useBrowserTheme();
   const [oauth2Providers, setOauth2Providers] = useState<OAuth2Provider[]>([]);
-  const [loginRole, setLoginRole] = useState<LoginRole>("admin");
 
   // 1. 初进入时检查后端是否在设置中启用了 OAuth2 提供商。
   // 2. 如果 URL 有 oauth2_token 查询，则消费它并完成登录。
@@ -88,11 +84,7 @@ const Login = () => {
     },
     onSubmit: async (values) => {
       try {
-        if (loginRole === "admin") {
-          await authAdminWithPassword(values.username, values.password);
-        } else {
-          await authUserWithPassword(values.username, values.password);
-        }
+        await loginWithPassword(values.username, values.password);
         await navigage("/");
       } catch (err) {
         notification.error({ title: t("common.text.request_error"), description: unwrapErrMsg(err) });
@@ -112,32 +104,6 @@ const Login = () => {
             <div className="mb-12 flex items-center justify-center">
               <img src={withBasePath("/logo.svg")} className="w-16" />
             </div>
-
-            <Segmented
-              block
-              value={loginRole}
-              onChange={(value) => setLoginRole(value as LoginRole)}
-              options={[
-                {
-                  value: "admin",
-                  label: (
-                    <span className="flex items-center justify-center gap-2">
-                      <IconShieldHalf size="1.1em" />
-                      {t("login.role.tab.admin")}
-                    </span>
-                  ),
-                },
-                {
-                  value: "user",
-                  label: (
-                    <span className="flex items-center justify-center gap-2">
-                      <IconUser size="1.1em" />
-                      {t("login.role.tab.user")}
-                    </span>
-                  ),
-                },
-              ]}
-            />
 
             <Form {...formProps} form={formInst} disabled={formPending} layout="vertical" validateTrigger="onBlur">
               <Form.Item name="username" label={t("login.form.username.label")} rules={[formRule]}>
