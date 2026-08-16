@@ -61,7 +61,8 @@
       "demote": "Remove Admin",
       "delete": "Delete",
       "delete_confirm": "Are you sure you want to delete this user?",
-      "current": "Current user"
+      "current": "Current user",
+      "change_password": "Change Password"
     },
     "form": {
       "email": {

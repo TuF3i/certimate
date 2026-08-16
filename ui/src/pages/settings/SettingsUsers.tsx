@@ -33,13 +33,36 @@ const SettingsUsers = () => {
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<UserModel[]>([]);
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [changeMyPasswordOpen, setChangeMyPasswordOpen] = useState(false);
   const [resetUser, setResetUser] = useState<UserModel | null>(null);
   const [grantUser, setGrantUser] = useState<UserModel | null>(null);
+
+  // 当前登录管理员（可能为超级管理员，不在 users 集合内）
+  const auth = getAuthStore();
+  const isSuperuser = auth.isSuperuser;
 
   const loadUsers = async () => {
     setLoading(true);
     try {
-      setUsers(await list());
+      const memberList = await list();
+      // 超级管理员不在 users 集合中，合并进列表并标记当前登录。
+      let merged: UserModel[] = memberList;
+      if (isSuperuser) {
+        const authRecord = auth.record;
+        if (authRecord && !memberList.some((u) => u.id === authRecord.id)) {
+          merged = [
+            {
+              id: authRecord.id,
+              email: authRecord.email ?? "",
+              name: authRecord.name,
+              role: "admin",
+              verified: true,
+            } as UserModel,
+            ...memberList,
+          ];
+        }
+      }
+      setUsers(merged);
     } catch (err) {
       notification.error({ title: t("common.text.request_error"), description: unwrapErrMsg(err) });
     } finally {
@@ -79,6 +102,23 @@ const SettingsUsers = () => {
     try {
       await updatePassword(user.id, password);
       setResetUser(null);
+      message.success(t("common.text.operation_succeeded"));
+    } catch (err) {
+      notification.error({ title: t("common.text.request_error"), description: unwrapErrMsg(err) });
+    }
+  };
+
+  // 当前登录管理员修改自己的密码：先验证旧密码。
+  const handleChangeMyPassword = async (values: { oldPassword: string; newPassword: string }) => {
+    try {
+      if (isSuperuser) {
+        await authAdminWithPassword(auth.record!.email, values.oldPassword);
+        await saveAdmin({ password: values.newPassword, passwordConfirm: values.newPassword });
+      } else {
+        await authUserWithPassword(auth.record!.email, values.oldPassword);
+        await updatePassword(auth.record!.id, values.newPassword);
+      }
+      setChangeMyPasswordOpen(false);
       message.success(t("common.text.operation_succeeded"));
     } catch (err) {
       notification.error({ title: t("common.text.request_error"), description: unwrapErrMsg(err) });
@@ -127,11 +167,6 @@ const SettingsUsers = () => {
       <Tips className="mt-3 md:max-w-5xl" message={t("settings.users.tips")} />
 
       <div className="mt-6">
-        <h3>{t("settings.users.my_account.title")}</h3>
-        <MyAccountCard className="md:max-w-5xl" />
-      </div>
-
-      <div className="mt-6">
         <h3>{t("settings.users.members.title")}</h3>
         <Show when={!loading} fallback={<Skeleton active />}>
           <Table
@@ -166,12 +201,18 @@ const SettingsUsers = () => {
                 width: 380,
                 render: (_value, record) => (
                   <Space size="small">
-                    <Button size="small" onClick={() => setGrantUser(record)}>
+                    <Button size="small" disabled={isCurrentUser(record.id)} onClick={() => setGrantUser(record)}>
                       {t("settings.users.table.grant")}
                     </Button>
-                    <Button size="small" onClick={() => setResetUser(record)}>
-                      {t("settings.users.table.reset_password")}
-                    </Button>
+                    {isCurrentUser(record.id) ? (
+                      <Button size="small" onClick={() => setChangeMyPasswordOpen(true)}>
+                        {t("settings.users.table.change_password")}
+                      </Button>
+                    ) : (
+                      <Button size="small" onClick={() => setResetUser(record)}>
+                        {t("settings.users.table.reset_password")}
+                      </Button>
+                    )}
                     <Button size="small" disabled={isCurrentUser(record.id)} onClick={() => handleToggleRole(record)}>
                       {record.role === "admin" ? t("settings.users.table.demote") : t("settings.users.table.promote")}
                     </Button>
@@ -194,21 +235,22 @@ const SettingsUsers = () => {
       </div>
 
       <CreateUserModal open={createModalOpen} onClose={() => setCreateModalOpen(false)} onSubmit={handleCreateUser} />
+      <ChangeMyPasswordModal open={changeMyPasswordOpen} onClose={() => setChangeMyPasswordOpen(false)} onSubmit={handleChangeMyPassword} />
       <ResetPasswordModal user={resetUser} onClose={() => setResetUser(null)} onSubmit={handleResetPassword} />
       <GrantWorkflowsModal user={grantUser} onClose={() => setGrantUser(null)} onSave={handleSaveGrants} />
     </>
   );
 };
 
-// 我的账号：当前登录管理员（superuser 或 role=admin 成员）的邮箱与密码修改。
-const MyAccountCard = ({ className, style }: { className?: string; style?: React.CSSProperties }) => {
+// 当前登录账号修改自己的密码：验证旧密码（superuser 走 _superusers，成员走 users）。
+interface ChangeMyPasswordModalProps {
+  open: boolean;
+  onClose: () => void;
+  onSubmit: (values: { oldPassword: string; newPassword: string }) => Promise<void>;
+}
+
+const ChangeMyPasswordModal = ({ open, onClose, onSubmit }: ChangeMyPasswordModalProps) => {
   const { t } = useTranslation();
-
-  const { message, notification } = App.useApp();
-
-  const auth = getAuthStore();
-  const email = auth.record?.email ?? "-";
-  const isSuperuser = auth.isSuperuser;
 
   const formSchema = z
     .object({
@@ -221,7 +263,6 @@ const MyAccountCard = ({ className, style }: { className?: string; style?: React
       path: ["confirmPassword"],
     });
   const formRule = createSchemaFieldRule(formSchema);
-  const [formVisible, setFormVisible] = useState(false);
   const {
     form: formInst,
     formPending,
@@ -233,59 +274,41 @@ const MyAccountCard = ({ className, style }: { className?: string; style?: React
       confirmPassword: "",
     },
     onSubmit: async (values) => {
-      try {
-        if (isSuperuser) {
-          await authAdminWithPassword(email, values.oldPassword);
-          await saveAdmin({ password: values.newPassword, passwordConfirm: values.confirmPassword });
-        } else {
-          await authUserWithPassword(email, values.oldPassword);
-          await updatePassword(auth.record!.id, values.newPassword);
-        }
-
-        message.success(t("common.text.operation_succeeded"));
-        setFormVisible(false);
-        formInst.resetFields();
-      } catch (err) {
-        notification.error({ title: t("common.text.request_error"), description: unwrapErrMsg(err) });
-      }
+      await onSubmit({
+        oldPassword: values.oldPassword,
+        newPassword: values.newPassword,
+      });
+      formInst.resetFields();
     },
   });
 
   return (
-    <div className={className} style={style}>
-      <div className="mb-2">
-        <Space size="small">
-          <span>{t("settings.users.my_account.email")}</span>
-          <b>{email}</b>
-        </Space>
-      </div>
-
-      {formVisible ? (
-        <Form {...formProps} form={formInst} disabled={formPending} layout="vertical">
-          <Form.Item name="oldPassword" label={t("settings.users.my_account.password.form.old_password.label")} rules={[formRule]}>
-            <Input.Password autoFocus placeholder={t("settings.users.my_account.password.form.old_password.placeholder")} />
-          </Form.Item>
-          <Form.Item name="newPassword" label={t("settings.users.my_account.password.form.new_password.label")} rules={[formRule]}>
-            <Input.Password placeholder={t("settings.users.my_account.password.form.new_password.placeholder")} />
-          </Form.Item>
-          <Form.Item name="confirmPassword" label={t("settings.users.my_account.password.form.confirm.label")} rules={[formRule]}>
-            <Input.Password placeholder={t("settings.users.my_account.password.form.confirm.placeholder")} />
-          </Form.Item>
-          <Form.Item className="mb-0">
-            <Space>
-              <Button type="primary" htmlType="submit" loading={formPending}>
-                {t("common.button.save")}
-              </Button>
-              <Button disabled={formPending} onClick={() => setFormVisible(false)}>
-                {t("common.button.cancel")}
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      ) : (
-        <Button onClick={() => setFormVisible(true)}>{t("settings.users.my_account.password.button")}</Button>
-      )}
-    </div>
+    <Modal
+      open={open}
+      title={t("settings.users.table.change_password")}
+      footer={null}
+      onCancel={() => {
+        formInst.resetFields();
+        onClose();
+      }}
+    >
+      <Form {...formProps} form={formInst} layout="vertical" validateTrigger="onBlur">
+        <Form.Item name="oldPassword" label={t("settings.users.my_account.password.form.old_password.label")} rules={[formRule]}>
+          <Input.Password autoFocus placeholder={t("settings.users.my_account.password.form.old_password.placeholder")} />
+        </Form.Item>
+        <Form.Item name="newPassword" label={t("settings.users.my_account.password.form.new_password.label")} rules={[formRule]}>
+          <Input.Password placeholder={t("settings.users.my_account.password.form.new_password.placeholder")} />
+        </Form.Item>
+        <Form.Item name="confirmPassword" label={t("settings.users.my_account.password.form.confirm.label")} rules={[formRule]}>
+          <Input.Password placeholder={t("settings.users.my_account.password.form.confirm.placeholder")} />
+        </Form.Item>
+        <Form.Item className="mb-0">
+          <Button block type="primary" htmlType="submit" loading={formPending}>
+            {t("common.button.save")}
+          </Button>
+        </Form.Item>
+      </Form>
+    </Modal>
   );
 };
 
