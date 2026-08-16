@@ -60,7 +60,8 @@
       "promote": "设为管理员",
       "demote": "取消管理员",
       "delete": "删除",
-      "delete_confirm": "确定要删除该用户吗？"
+      "delete_confirm": "确定要删除该用户吗？",
+      "current": "当前登录"
     },
     "form": {
       "email": {
@@ -285,9 +286,6 @@
       },
       "auto_create": {
         "label": "首次登录自动创建成员账号"
-      },
-      "auto_create_prefix": {
-        "label": "自动创建账号的邮箱前缀"
       }
     }
   },

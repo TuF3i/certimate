@@ -143,6 +143,12 @@ const SettingsUsers = () => {
               {
                 title: t("settings.users.table.email"),
                 dataIndex: "email",
+                render: (value: string, record) => (
+                  <Space size="small">
+                    <span>{value}</span>
+                    {isCurrentUser(record.id) ? <Tag color="blue">{t("settings.users.table.current")}</Tag> : null}
+                  </Space>
+                ),
               },
               {
                 title: t("settings.users.table.name"),

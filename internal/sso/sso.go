@@ -155,7 +155,7 @@ func (s *Service) HandleOIDCCallback(ctx context.Context, code, state, redirectU
 		return nil, "", errors.New("userinfo does not contain 'sub' claim")
 	}
 
-	account, err := s.resolveAccount(ctx, ProviderOIDC, subject, profile["email"], profile["name"], oidcCfg.AutoCreate, oidcCfg.AutoCreatePrefix)
+	account, err := s.resolveAccount(ctx, ProviderOIDC, subject, profile["email"], profile["name"], oidcCfg.AutoCreate)
 	if err != nil {
 		return nil, "", err
 	}
@@ -187,7 +187,7 @@ func (s *Service) HandleLDAPLogin(ctx context.Context, username, password string
 		return nil, "", errors.New("LDAP user has empty DN")
 	}
 
-	account, err := s.resolveAccount(ctx, ProviderLDAP, subject, user.Email, user.Name, ldapCfg.AutoCreate, ldapCfg.AutoCreatePrefix)
+	account, err := s.resolveAccount(ctx, ProviderLDAP, subject, user.Email, user.Name, ldapCfg.AutoCreate)
 	if err != nil {
 		return nil, "", err
 	}
@@ -201,7 +201,7 @@ func (s *Service) HandleLDAPLogin(ctx context.Context, username, password string
 
 // resolveAccount 根据 (provider, subject) 关联查找已绑定的账号；
 // 不存在时若允许 autoCreate，则按 email 匹配已有账号，否则创建普通用户。
-func (s *Service) resolveAccount(ctx context.Context, providerName, subject string, emailAny, nameAny any, autoCreate bool, autoCreatePrefix string) (*core.Record, error) {
+func (s *Service) resolveAccount(ctx context.Context, providerName, subject string, emailAny, nameAny any, autoCreate bool) (*core.Record, error) {
 	email := fmt.Sprintf("%v", emailAny)
 	if email == "<nil>" {
 		email = ""
@@ -249,8 +249,9 @@ func (s *Service) resolveAccount(ctx context.Context, providerName, subject stri
 		return nil, fmt.Errorf("no account linked to %s ( an administrator must first link it in settings )", providerName)
 	}
 
-	// 自动创建的账号默认是普通用户（users 集合，role=user）。
-	account, err := s.createUser(ctx, providerName, subject, email, name, autoCreatePrefix)
+	// 自动创建的账号默认是普通用户（users 集合，role=user）；
+	// 邮箱优先使用 IdP 提供的邮箱，缺失时生成固定格式的占位邮箱。
+	account, err := s.createUser(ctx, providerName, subject, email, name)
 	if err != nil {
 		return nil, err
 	}
@@ -274,18 +275,16 @@ func (s *Service) bindLink(ctx context.Context, providerName, subject, accountId
 }
 
 // createUser 创建普通用户账号（users 集合，role=user）。
-func (s *Service) createUser(ctx context.Context, providerName, subject, email, name, prefix string) (*core.Record, error) {
+// 邮箱优先使用 IdP 提供的邮箱；缺失时生成 <sso>+<provider>+<subject>@certimate.local 占位邮箱。
+func (s *Service) createUser(ctx context.Context, providerName, subject, email, name string) (*core.Record, error) {
 	collection, err := app.GetApp().FindCollectionByNameOrId("users")
 	if err != nil {
 		return nil, err
 	}
 
 	record := core.NewRecord(collection)
-	if prefix == "" {
-		prefix = "sso"
-	}
 	if email == "" {
-		email = fmt.Sprintf("%s+%s+%s@certimate.local", prefix, providerName, subject)
+		email = fmt.Sprintf("sso+%s+%s@certimate.local", providerName, subject)
 	}
 	record.Set("email", email)
 	record.Set("name", name)

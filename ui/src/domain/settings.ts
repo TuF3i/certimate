@@ -68,7 +68,6 @@ export interface SSOOIDCConfig {
   discoveryUrl?: string;
   scopes?: string[];
   autoCreate?: boolean;
-  autoCreatePrefix?: string;
 }
 
 export interface SSOLDAPConfig {
@@ -82,7 +81,6 @@ export interface SSOLDAPConfig {
   emailAttribute?: string;
   nameAttribute?: string;
   autoCreate?: boolean;
-  autoCreatePrefix?: string;
 }
 
 export type SSOSettingsContent = {

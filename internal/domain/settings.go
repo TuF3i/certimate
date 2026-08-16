@@ -78,29 +78,27 @@ type SettingsContentForSSO struct {
 
 // SettingsContentForSSOOIDC 表示标准 OIDC 提供者配置。
 type SettingsContentForSSOOIDC struct {
-	Enabled          bool     `json:"enabled"`
-	DisplayName      string   `json:"displayName,omitempty"` // 登录页按钮展示名，零值时默认 "OIDC"
-	ClientID         string   `json:"clientId"`
-	ClientSecret     string   `json:"clientSecret"`
-	DiscoveryURL     string   `json:"discoveryUrl"`               // OIDC Discovery 端点，如 https://auth.example.com/.well-known/openid-configuration
-	Scopes           []string `json:"scopes"`                     // 零值时默认 ["openid", "email", "profile"]
-	AutoCreate       bool     `json:"autoCreate"`                 // 首次登录无绑定时是否自动创建普通用户
-	AutoCreatePrefix string   `json:"autoCreatePrefix,omitempty"` // 占位邮箱前缀（用户信息缺邮箱时）
+	Enabled      bool     `json:"enabled"`
+	DisplayName  string   `json:"displayName,omitempty"` // 登录页按钮展示名，零值时默认 "OIDC"
+	ClientID     string   `json:"clientId"`
+	ClientSecret string   `json:"clientSecret"`
+	DiscoveryURL string   `json:"discoveryUrl"` // OIDC Discovery 端点，如 https://auth.example.com/.well-known/openid-configuration
+	Scopes       []string `json:"scopes"`       // 零值时默认 ["openid", "email", "profile"]
+	AutoCreate   bool     `json:"autoCreate"`   // 首次登录无绑定时是否自动创建普通用户
 }
 
 // SettingsContentForSSOLDAP 表示 LDAP 提供者配置。
 type SettingsContentForSSOLDAP struct {
-	Enabled          bool   `json:"enabled"`
-	DisplayName      string `json:"displayName,omitempty"`      // 登录页表单标题，零值时默认 "LDAP"
-	ServerURL        string `json:"serverUrl"`                  // 如 ldap://host:389 或 ldaps://host:636
-	BindDN           string `json:"bindDn"`                     // 用于搜索用户的服务账号 DN
-	BindPassword     string `json:"bindPassword"`               // 服务账号密码
-	SearchBase       string `json:"searchBase"`                 // 用户搜索基 DN
-	SearchFilter     string `json:"searchFilter"`               // 搜索过滤器，{{username}} 为登录用户名占位符，零值时默认 (uid={{username}})
-	EmailAttribute   string `json:"emailAttribute,omitempty"`   // 邮箱属性名，零值时默认 "mail"
-	NameAttribute    string `json:"nameAttribute,omitempty"`    // 显示名属性名，零值时默认 "displayName"
-	AutoCreate       bool   `json:"autoCreate"`                 // 首次登录无绑定时是否自动创建普通用户
-	AutoCreatePrefix string `json:"autoCreatePrefix,omitempty"` // 占位邮箱前缀
+	Enabled        bool   `json:"enabled"`
+	DisplayName    string `json:"displayName,omitempty"`    // 登录页表单标题，零值时默认 "LDAP"
+	ServerURL      string `json:"serverUrl"`                // 如 ldap://host:389 或 ldaps://host:636
+	BindDN         string `json:"bindDn"`                   // 用于搜索用户的服务账号 DN
+	BindPassword   string `json:"bindPassword"`             // 服务账号密码
+	SearchBase     string `json:"searchBase"`               // 用户搜索基 DN
+	SearchFilter   string `json:"searchFilter"`             // 搜索过滤器，{{username}} 为登录用户名占位符，零值时默认 (uid={{username}})
+	EmailAttribute string `json:"emailAttribute,omitempty"` // 邮箱属性名，零值时默认 "mail"
+	NameAttribute  string `json:"nameAttribute,omitempty"`  // 显示名属性名，零值时默认 "displayName"
+	AutoCreate     bool   `json:"autoCreate"`               // 首次登录无绑定时是否自动创建普通用户
 }
 
 func (c SettingsContent) AsSSO() *SettingsContentForSSO {

@@ -60,7 +60,8 @@
       "promote": "Make Admin",
       "demote": "Remove Admin",
       "delete": "Delete",
-      "delete_confirm": "Are you sure you want to delete this user?"
+      "delete_confirm": "Are you sure you want to delete this user?",
+      "current": "Current user"
     },
     "form": {
       "email": {
@@ -285,9 +286,6 @@
       },
       "auto_create": {
         "label": "Auto-create member on first sign-in"
-      },
-      "auto_create_prefix": {
-        "label": "Email prefix for auto-created accounts"
       }
     }
   },

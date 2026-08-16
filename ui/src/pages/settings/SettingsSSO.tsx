@@ -122,7 +122,6 @@ const OIDCConfigForm = ({ config, update }: OIDCConfigFormProps) => {
     discoveryUrl: z.string().max(1024).optional(),
     scopes: z.string().max(512).optional(),
     autoCreate: z.boolean().optional(),
-    autoCreatePrefix: z.string().max(64).optional(),
   });
 
   const {
@@ -138,7 +137,6 @@ const OIDCConfigForm = ({ config, update }: OIDCConfigFormProps) => {
       discoveryUrl: config?.discoveryUrl,
       scopes: (config?.scopes ?? []).join(" "),
       autoCreate: config?.autoCreate,
-      autoCreatePrefix: config?.autoCreatePrefix,
     },
     onSubmit: async (values) => {
       await update({
@@ -152,7 +150,6 @@ const OIDCConfigForm = ({ config, update }: OIDCConfigFormProps) => {
           .map((s: string) => s.trim())
           .filter(Boolean),
         autoCreate: values.autoCreate,
-        autoCreatePrefix: values.autoCreatePrefix || undefined,
       });
     },
   });
@@ -185,14 +182,9 @@ const OIDCConfigForm = ({ config, update }: OIDCConfigFormProps) => {
 
       <Divider plain className="my-3" />
 
-      <Space.Compact block>
-        <Form.Item name="autoCreate" label={t("settings.sso.form.auto_create.label")} className="flex-1" valuePropName="checked">
-          <Switch />
-        </Form.Item>
-        <Form.Item name="autoCreatePrefix" label={t("settings.sso.form.auto_create_prefix.label")} className="flex-1">
-          <Input placeholder="sso" />
-        </Form.Item>
-      </Space.Compact>
+      <Form.Item name="autoCreate" label={t("settings.sso.form.auto_create.label")} valuePropName="checked">
+        <Switch />
+      </Form.Item>
 
       <Form.Item className="mb-0">
         <Button type="primary" htmlType="submit" loading={formPending}>
@@ -222,7 +214,6 @@ const LDAPConfigForm = ({ config, update }: LDAPConfigFormProps) => {
     emailAttribute: z.string().max(128).optional(),
     nameAttribute: z.string().max(128).optional(),
     autoCreate: z.boolean().optional(),
-    autoCreatePrefix: z.string().max(64).optional(),
   });
 
   const {
@@ -241,7 +232,6 @@ const LDAPConfigForm = ({ config, update }: LDAPConfigFormProps) => {
       emailAttribute: config?.emailAttribute,
       nameAttribute: config?.nameAttribute,
       autoCreate: config?.autoCreate,
-      autoCreatePrefix: config?.autoCreatePrefix,
     },
     onSubmit: async (values) => {
       await update({
@@ -255,7 +245,6 @@ const LDAPConfigForm = ({ config, update }: LDAPConfigFormProps) => {
         emailAttribute: values.emailAttribute || undefined,
         nameAttribute: values.nameAttribute || undefined,
         autoCreate: values.autoCreate,
-        autoCreatePrefix: values.autoCreatePrefix || undefined,
       });
     },
   });
@@ -301,14 +290,9 @@ const LDAPConfigForm = ({ config, update }: LDAPConfigFormProps) => {
 
       <Divider plain className="my-3" />
 
-      <Space.Compact block>
-        <Form.Item name="autoCreate" label={t("settings.sso.form.auto_create.label")} className="flex-1" valuePropName="checked">
-          <Switch />
-        </Form.Item>
-        <Form.Item name="autoCreatePrefix" label={t("settings.sso.form.auto_create_prefix.label")} className="flex-1">
-          <Input placeholder="sso" />
-        </Form.Item>
-      </Space.Compact>
+      <Form.Item name="autoCreate" label={t("settings.sso.form.auto_create.label")} valuePropName="checked">
+        <Switch />
+      </Form.Item>
 
       <Form.Item className="mb-0">
         <Button type="primary" htmlType="submit" loading={formPending}>
