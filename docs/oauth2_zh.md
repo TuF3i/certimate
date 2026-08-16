@@ -46,8 +46,11 @@ Certimate 从 v0.4.31 开始支持通过 OAuth2 进行单点登录 (SSO)。管�
 | `google`    | Google             | `openid email profile` | `sub`           |
 | `azuread`   | Microsoft (Azure AD) | `openid email profile` | `sub`           |
 | `dingtalk`  | DingTalk           | _(空)_               | `openId`          |
+| `authentik` | Authentik (自托管) | `openid email profile` | `sub`           |
 
-> 其他提供商（如腾讯云鳄梨、Auth0、Keycloak、Casdoor、通用 OIDC 等）只需按[自定义端点](#自定义端点--字段映射)一节填入对应 URL 与字段名即可接入，无需改动代码。
+> 其他提供商（如腾讯云鳄梨、Auth0、Keycloak、通用 OIDC 等）只需按[自定义端点](#自定义端点--字段映射)一节填入对应 URL 与字段名即可接入，无需改动代码。
+>
+> Authentik 是 **自托管 IdP**，访问它的端点分别带有主机名 + 应用 slug，不能像 GitHub 那样开箱即用。预设只预填 scope 与字段映射；管理员需在表单中显式填入 3 个端点。详见 [Authentik 接入示例](#authentik-接入示例)。
 
 ## 快速上手：以 GitHub 为例
 
@@ -87,6 +90,53 @@ Certimate 从 v0.4.31 开始支持通过 OAuth2 进行单点登录 (SSO)。管�
 
 - 登录表单下方会出现分隔线「or」和「Sign in with GitHub」按钮。
 - 点击按钮 → GitHub 授权页面 → 自动跳回 `/login?oauth2_token=...` → 自动登录并跳转到首页。
+
+---
+
+## Authentik 接入示例
+
+假设你的 Authentik 实例部署在 `https://auth.example.com`，要为 Certimate 创建一个 OAuth2 应用。
+
+### 1. 在 Authentik 側创建 OAuth2/OpenID Connect Provider
+
+进入 **Authentik Admin Interface → Applications → Providers** → **Create → OAuth2/OpenID Provider**：
+
+- **Name**: `certimate`
+- **Authentication flow**: 选默认 `default-authentication-flow`（或你的定制流）
+- **Client type**: `Confidential`
+- **Client ID** / **Client Secret**: Authentik 会生成
+- **Redirect URIs / Origins**: `https://cert.example.com/api/oauth2/callback?provider=authentik`
+- **Scopes**: 勾选 `openid:openid`, `email:email`, `profile:profile`
+
+创建成功后记下 **Client ID** 与 **Client Secret**。Authentik 还会在 provider 详情页直接给出三个端点 URL（请划出 application slug）：
+
+- `https://auth.example.com/application/o/certimate/authorize/`
+- `https://auth.example.com/application/o/certimate/token/`
+- `https://auth.example.com/application/o/certimate/userinfo/`
+
+### 2. 在 Certimate 中配置
+
+登录后进入 **设置 → OAuth2** → 点击「Add authentik」→展开面板填：
+
+| 字段              | 取值 |
+| ------------------ | ------------------------------------------------------------ |
+| 启用               | ✓ |
+| Display Name       | `Authentik`（会展示在登录页按钮上） |
+| Client ID           | 第 1 步拿到 |
+| Client Secret       | 第 1 步拿到 |
+| Redirect URL         | `https://cert.example.com/api/oauth2/callback?provider=authentik` |
+| Scopes (空格分隔)   | `openid email profile`（预设默认，不需修改） |
+| Authorization URL  | `https://auth.example.com/application/o/certimate/authorize/` |
+| Token URL           | `https://auth.example.com/application/o/certimate/token/` |
+| UserInfo URL        | `https://auth.example.com/application/o/certimate/userinfo/` |
+| Subject 字段名      | `sub`（OIDC 标准，认证不需修改） |
+| 自动创建超级管理员 | 按需勾选 |
+
+点击保存。
+
+### 3. 验证
+
+与 GitHub 示例相同：退出登录 → `/login` 会出现「Sign in with Authentik」按钮 → 点击 → Authentik 授权页 → 跳回 `/login?oauth2_token=...` → 自动登录。
 
 ---
 

@@ -43,8 +43,11 @@ The `name` column is the provider identifier you use as the `name` field in Sett
 | `google`    | Google                | `openid email profile`| `sub`         |
 | `azuread`   | Microsoft (Azure AD)  | `openid email profile`| `sub`         |
 | `dingtalk`  | DingTalk              | _(empty)_             | `openId`      |
+| `authentik` | Authentik (self-hosted) | `openid email profile` | `sub`     |
 
 > Other providers (custom GitLab, Casdoor, Keycloak, Auth0, generic OIDC, etc.) can be onboarded via the **Custom endpoints** section below — no code change required.
+>
+> Authentik is **self-hosted**, so authorization / token / userinfo endpoints are specific to your instance and application slug. The preset only fills scopes and field mappings; an administrator must fill the three endpoints explicitly. See [Authentik example](#authentik-example).
 
 ## Quick Start: GitHub Example
 
@@ -84,6 +87,53 @@ Log out and return to `/login`:
 
 - A divider **"or"** and a **Sign in with GitHub** button appear below the password form.
 - Click → authorize at GitHub → automatically redirected to `/login?oauth2_token=...` → automatically logged in and navigated to `/`.
+
+---
+
+## Authentik Example
+
+Assume your Authentik instance runs at `https://auth.example.com` and you want to create one application for Certimate.
+
+### 1. Create an OAuth2 / OpenID Connect provider in Authentik
+
+Go to **Authentik Admin Interface → Applications → Providers** → **Create → OAuth2/OpenID Provider**:
+
+- **Name**: `certimate`
+- **Authentication flow**: `default-authentication-flow` (or your customized flow)
+- **Client type**: `Confidential`
+- **Client ID** / **Client Secret**: Auto-generated
+- **Redirect URIs / Origins**: `https://cert.example.com/api/oauth2/callback?provider=authentik`
+- **Scopes**: tick `openid:openid`, `email:email`, `profile:profile`
+
+Record the resulting **Client ID** and **Client Secret**. The provider detail page also shows the three endpoint URLs (note the application slug):
+
+- `https://auth.example.com/application/o/certimate/authorize/`
+- `https://auth.example.com/application/o/certimate/token/`
+- `https://auth.example.com/application/o/certimate/userinfo/`
+
+### 2. Configure in Certimate
+
+Log in and visit **Settings → OAuth2** → click **Add authentik** → fill the panel:
+
+| Field              | Value |
+| ------------------ | ------------------------------------------------------------ |
+| Enabled            | ✓ |
+| Display Name       | `Authentik` (shown on the login button) |
+| Client ID          | from step 1 |
+| Client Secret      | from step 1 |
+| Redirect URL       | `https://cert.example.com/api/oauth2/callback?provider=authentik` |
+| Scopes (space separated) | `openid email profile` (preset default, no need to change) |
+| Authorization URL  | `https://auth.example.com/application/o/certimate/authorize/` |
+| Token URL          | `https://auth.example.com/application/o/certimate/token/` |
+| UserInfo URL       | `https://auth.example.com/application/o/certimate/userinfo/` |
+| Subject field      | `sub` (OIDC standard, no need to change) |
+| Auto-create superuser | as needed |
+
+Save.
+
+### 3. Verify
+
+Same as the GitHub example: log out → `/login` shows **Sign in with Authentik** → click → Authentik authorization page → redirected back to `/login?oauth2_token=...` → automatically logged in.
 
 ---
 

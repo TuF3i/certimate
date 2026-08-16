@@ -12,8 +12,8 @@ import { useOAuth2SettingsStore } from "@/stores/settings";
 import { unwrapErrMsg } from "@/utils/error";
 
 // Built-in presets matching the backend `internal/oauth2/providers.go`.
-// Only `name` 我们关注用于提供预设按钮导出。
-const PRESET_PROVIDER_NAMES = ["github", "gitlab", "gitee", "google", "azuread", "dingtalk"];
+// 注意：自托管提供商（如 authentik）端点需用户显式填写。
+const PRESET_PROVIDER_NAMES = ["github", "gitlab", "gitee", "google", "azuread", "dingtalk", "authentik"];
 
 const Settings = () => {
   const { t } = useTranslation();
