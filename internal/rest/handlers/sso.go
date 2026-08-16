@@ -83,6 +83,7 @@ func (h *SSOHandler) callback(e *core.RequestEvent) error {
 	qp := url.Values{}
 	qp.Set("sso_token", token)
 	qp.Set("sso_email", account.Email())
+	qp.Set("sso_collection", account.Collection().Name)
 	sep := "?"
 	if strings.Contains(redirectTarget, "?") {
 		sep = "&"

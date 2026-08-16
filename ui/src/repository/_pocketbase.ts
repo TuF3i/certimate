@@ -7,7 +7,10 @@ export const getPocketBase = () => {
   if (pb) return pb;
   pb = new PocketBase(getBasePath());
   pb.afterSend = (res, data) => {
-    if ((res.status === 401 || res.status === 403) && pb.authStore?.isValid) {
+    // 排除 auth-refresh：SSO 回调消费 token 时会主动用 auth-refresh 拉取完整 record，
+    // 若此时命中错误的集合会返回 401，不应触发清空会话 + 整页刷新（会造成刷新循环）。
+    const isAuthRefresh = res.url.includes("/auth-refresh");
+    if ((res.status === 401 || res.status === 403) && pb.authStore?.isValid && !isAuthRefresh) {
       pb.authStore.clear();
       location.reload();
     }

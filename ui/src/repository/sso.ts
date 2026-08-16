@@ -56,8 +56,11 @@ export async function ldapLogin(username: string, password: string): Promise<voi
 }
 
 /**
- * 在登录页 OnMount 时调用，检查 URL 中的 SSO 回调 token（sso_token），
- * 存在则写入 PocketBase authStore 并刷新完整 record，随后清除临时 query。
+ * 在登录页 OnMount 时检查 URL 中的 SSO 回调 token（sso_token），
+ * 存在则写入 PocketBase authStore 并刷新对应集合的完整 record，随后清除临时 query。
+ *
+ * 后端跳转时带 sso_collection（"_superusers" / "users"），直接刷新对应集合，
+ * 避免对错误集合发起 auth-refresh 触发 401 刷新循环。
  */
 export async function consumeSSOCallback(): Promise<boolean> {
   const url = new URL(window.location.href);
@@ -66,21 +69,29 @@ export async function consumeSSOCallback(): Promise<boolean> {
     return false;
   }
 
-  pb.authStore.save(token, null);
-  try {
-    await pb.collection("_superusers").authRefresh();
-  } catch (_err) {
-    // 若当前 token 属于 users 集合则用 users 刷新；失败则清除。
+  const collection = url.searchParams.get("sso_collection") || undefined;
+
+  const tryRefresh = async (name: string) => {
     try {
-      await pb.collection("users").authRefresh();
-    } catch (_err2) {
-      pb.authStore.clear();
+      await pb.collection(name).authRefresh();
+      return true;
+    } catch (_err) {
       return false;
     }
-  }
+  };
 
+  // 优先按后端标记的集合刷新；缺失时兜底依次尝试。
+  const ok = collection ? await tryRefresh(collection) : (await tryRefresh("users")) || (await tryRefresh("_superusers"));
+
+  // 无论成败都清除 URL 上的临时参数，避免刷新后重复消费。
   url.searchParams.delete("sso_token");
   url.searchParams.delete("sso_email");
+  url.searchParams.delete("sso_collection");
   window.history.replaceState({}, "", url.toString());
+
+  if (!ok) {
+    pb.authStore.clear();
+    return false;
+  }
   return true;
 }
