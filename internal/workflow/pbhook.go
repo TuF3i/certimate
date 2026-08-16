@@ -2,10 +2,12 @@ package workflow
 
 import (
 	"context"
+	"slices"
 
 	"github.com/pocketbase/pocketbase/core"
 
 	"github.com/certimate-go/certimate/internal/app"
+	"github.com/certimate-go/certimate/internal/authz"
 	"github.com/certimate-go/certimate/internal/domain"
 )
 
@@ -24,6 +26,16 @@ func registerWorkflowRecordEvents() {
 		return nil
 	})
 	pb.OnRecordUpdateRequest(domain.CollectionNameWorkflow).BindFunc(func(e *core.RecordRequestEvent) error {
+		// 普通用户（非管理员）可以编辑被授权的工作流，但不得修改 grantedUsers（授权元数据），
+		// 防止用户把自己加入其他工作流的授权列表实现自我提权。
+		if e.Auth != nil && !authz.IsAdmin(e.Auth) {
+			if original := e.Record.Original(); original != nil {
+				if !slices.Equal(original.GetStringSlice("grantedUsers"), e.Record.GetStringSlice("grantedUsers")) {
+					return e.ForbiddenError("Only admins can change workflow grants.", nil)
+				}
+			}
+		}
+
 		if err := e.Next(); err != nil {
 			return err
 		}

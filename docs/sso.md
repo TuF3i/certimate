@@ -135,7 +135,7 @@ After a successful OIDC callback a short-lived HttpOnly cookie (`certimate_sso_t
 - The error is intentionally generic. Verify the service account can search for the user (e.g. with `ldapsearch`) and that the filter is correct.
 
 **What can SSO users do?**
-- Ordinary members can only see workflows (and their certificates) explicitly granted to them; promoting them to admin grants full access (see User Management).
+- Ordinary members can view, edit and run the workflows explicitly granted to them (and their certificates), but cannot delete workflows or change their grant lists; promoting them to admin grants full access (see User Management).
 
 ---
 

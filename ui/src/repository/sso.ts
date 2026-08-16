@@ -71,11 +71,18 @@ export async function consumeSSOCallback(): Promise<boolean> {
 
   const collection = url.searchParams.get("sso_collection") || undefined;
 
+  // [DEBUG] 定位 auth-refresh 401：输出 token 与 authStore 一致性
+  console.log("[sso] token head:", token.slice(0, 30), "len:", token.length);
+  pb.authStore.save(token, null);
+  console.log("[sso] authStore.token === token:", pb.authStore.token === token, "token head:", (pb.authStore.token ?? "").slice(0, 30));
+
   const tryRefresh = async (name: string) => {
     try {
       await pb.collection(name).authRefresh();
       return true;
-    } catch (_err) {
+    } catch (err: any) {
+      // [DEBUG] 输出失败详情
+      console.log("[sso] auth-refresh failed for", name, "status:", err?.status, "message:", err?.response?.message, "url:", err?.url);
       return false;
     }
   };
