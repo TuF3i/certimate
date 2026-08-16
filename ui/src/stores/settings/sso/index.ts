@@ -1,26 +1,26 @@
 import { produce } from "immer";
 import { create } from "zustand";
 
-import { type OAuth2SettingsContent, SETTINGS_NAMES, type SettingsModel } from "@/domain/settings";
+import { SETTINGS_NAMES, type SSOSettingsContent, type SettingsModel } from "@/domain/settings";
 import { get as getSettings, save as saveSettings } from "@/repository/settings";
 
-interface OAuth2SettingsState {
-  settings: OAuth2SettingsContent;
+interface SSOSettingsState {
+  settings: SSOSettingsContent;
   loading: boolean;
   loadedAtOnce: boolean;
 }
 
-interface OAuth2SettingsStore extends OAuth2SettingsState {
+interface SSOSettingsStore extends SSOSettingsState {
   loadSettings: (refresh?: boolean) => Promise<void>;
-  saveSettings: (settings: OAuth2SettingsContent) => Promise<void>;
+  saveSettings: (settings: SSOSettingsContent) => Promise<void>;
 }
 
-export const useOAuth2SettingsStore = create<OAuth2SettingsStore>((set, get) => {
-  let fetcher: Promise<SettingsModel<OAuth2SettingsContent>> | null = null;
-  let model: SettingsModel<OAuth2SettingsContent>;
+export const useSSOSettingsStore = create<SSOSettingsStore>((set, get) => {
+  let fetcher: Promise<SettingsModel<SSOSettingsContent>> | null = null;
+  let model: SettingsModel<SSOSettingsContent>;
 
   return {
-    settings: { providers: [] },
+    settings: {},
     loading: false,
     loadedAtOnce: false,
 
@@ -29,7 +29,7 @@ export const useOAuth2SettingsStore = create<OAuth2SettingsStore>((set, get) => 
         return;
       }
 
-      fetcher ??= getSettings(SETTINGS_NAMES.OAUTH2);
+      fetcher ??= getSettings(SETTINGS_NAMES.SSO);
 
       try {
         set({ loading: true });
@@ -42,14 +42,14 @@ export const useOAuth2SettingsStore = create<OAuth2SettingsStore>((set, get) => 
     },
 
     saveSettings: async (settings) => {
-      model ??= await getSettings(SETTINGS_NAMES.OAUTH2);
-      model = await saveSettings<OAuth2SettingsContent>({
+      model ??= await getSettings(SETTINGS_NAMES.SSO);
+      model = await saveSettings<SSOSettingsContent>({
         ...model,
         content: settings,
       });
 
       set(
-        produce((state: OAuth2SettingsState) => {
+        produce((state: SSOSettingsState) => {
           state.settings = model.content;
           state.loadedAtOnce = true;
         })

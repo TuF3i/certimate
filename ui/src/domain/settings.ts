@@ -6,7 +6,7 @@ export const SETTINGS_NAMES = Object.freeze({
   SCRIPT_TEMPLATE: "scriptTemplate",
   SSL_PROVIDER: "sslProvider",
   PERSISTENCE: "persistence",
-  OAUTH2: "oauth2",
+  SSO: "sso",
 } as const);
 
 export type SettingsNames = (typeof SETTINGS_NAMES)[keyof typeof SETTINGS_NAMES];
@@ -59,25 +59,34 @@ export type PersistenceSettingsContent = {
 };
 // #endregion
 
-// #region Settings: OAuth2
-export interface OAuth2ProviderConfig {
-  name: string;
-  displayName?: string;
+// #region Settings: SSO
+export interface SSOOIDCConfig {
   enabled?: boolean;
+  displayName?: string;
   clientId?: string;
   clientSecret?: string;
+  discoveryUrl?: string;
   scopes?: string[];
-  redirectUrl?: string;
-  authUrl?: string;
-  tokenUrl?: string;
-  userInfoUrl?: string;
-  subjectField?: string;
-  scopesJoin?: string;
   autoCreate?: boolean;
   autoCreatePrefix?: string;
 }
 
-export type OAuth2SettingsContent = {
-  providers?: OAuth2ProviderConfig[];
+export interface SSOLDAPConfig {
+  enabled?: boolean;
+  displayName?: string;
+  serverUrl?: string;
+  bindDn?: string;
+  bindPassword?: string;
+  searchBase?: string;
+  searchFilter?: string;
+  emailAttribute?: string;
+  nameAttribute?: string;
+  autoCreate?: boolean;
+  autoCreatePrefix?: string;
+}
+
+export type SSOSettingsContent = {
+  oidc?: SSOOIDCConfig | null;
+  ldap?: SSOLDAPConfig | null;
 };
 // #endregion

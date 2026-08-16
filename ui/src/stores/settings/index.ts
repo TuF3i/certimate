@@ -2,4 +2,4 @@
 export { usePersistenceSettingsStore } from "./persistence";
 export { useSSLProviderSettingsStore } from "./sslprovider";
 export { useNotifyTemplatesStore, useScriptTemplatesStore } from "./template";
-export { useOAuth2SettingsStore } from "./oauth2";
+export { useSSOSettingsStore } from "./sso";

@@ -1,10 +1,8 @@
 {
   "$ns": "settings",
-
   "page": {
     "heading": "Settings"
   },
-
   "users": {
     "tab": "Users",
     "title": "User Management",
@@ -80,31 +78,6 @@
       }
     }
   },
-  "oauth2": {
-    "tab": "OAuth2",
-    "providers": {
-      "title": "OAuth2 Providers",
-      "add_preset": "Add {{provider}}",
-      "tips": "Configure one or more OAuth2 identity providers to enable the corresponding Sign-in buttons on the login page. Both the authoritative endpoints and field mapping fall back to built-in presets when left blank.",
-      "enabled": "Enabled",
-      "disabled": "Disabled",
-      "form": {
-        "enabled": { "label": "Enabled" },
-        "display_name": { "label": "Display Name" },
-        "client_id": { "label": "Client ID" },
-        "client_secret": { "label": "Client Secret" },
-        "redirect_url": { "label": "Redirect URL" },
-        "scopes": { "label": "Scopes (space separated)" },
-        "auth_url": { "label": "Authorization URL", "placeholder": "Leave empty to use preset" },
-        "token_url": { "label": "Token URL", "placeholder": "Leave empty to use preset" },
-        "user_info_url": { "label": "UserInfo URL", "placeholder": "Leave empty to use preset" },
-        "subject_field": { "label": "Subject field name (optional)" },
-        "auto_create": { "label": "Auto-create superuser on first sign-in" },
-        "auto_create_prefix": { "label": "Email prefix for auto-created accounts" }
-      }
-    }
-  },
-
   "account": {
     "tab": "Account",
     "username": {
@@ -152,7 +125,6 @@
       "title": "Two-factor authentication"
     }
   },
-
   "appearance": {
     "tab": "Appearance",
     "theme": {
@@ -195,7 +167,6 @@
       }
     }
   },
-
   "sslprovider": {
     "tab": "Certificate authority",
     "ca": {
@@ -221,7 +192,6 @@
       }
     }
   },
-
   "persistence": {
     "tab": "Persistence",
     "alerting": {
@@ -253,7 +223,74 @@
       }
     }
   },
-
+  "sso": {
+    "tab": "Single Sign-On",
+    "title": "Single Sign-On (SSO)",
+    "tips": "Configure one OIDC provider and/or one LDAP provider. OIDC users authenticate via the authorization-code flow with the callback URL shown below; LDAP users sign in with their directory username and password.",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "oidc": {
+      "title": "OIDC Provider",
+      "copy_callback": "Copy callback URL",
+      "form": {
+        "display_name": {
+          "label": "Display Name"
+        },
+        "discovery_url": {
+          "label": "Discovery URL"
+        },
+        "scopes": {
+          "label": "Scopes (space separated)"
+        }
+      }
+    },
+    "ldap": {
+      "title": "LDAP Provider",
+      "form": {
+        "display_name": {
+          "label": "Display Name"
+        },
+        "server_url": {
+          "label": "Server URL"
+        },
+        "bind_dn": {
+          "label": "Service Account DN"
+        },
+        "bind_password": {
+          "label": "Service Account Password"
+        },
+        "search_base": {
+          "label": "Search Base DN"
+        },
+        "search_filter": {
+          "label": "Search Filter"
+        },
+        "email_attribute": {
+          "label": "Email Attribute"
+        },
+        "name_attribute": {
+          "label": "Name Attribute"
+        }
+      }
+    },
+    "form": {
+      "enabled": {
+        "label": "Enabled"
+      },
+      "client_id": {
+        "label": "Client ID"
+      },
+      "client_secret": {
+        "label": "Client Secret"
+      },
+      "auto_create": {
+        "label": "Auto-create member on first sign-in"
+      },
+      "auto_create_prefix": {
+        "label": "Email prefix for auto-created accounts"
+      }
+    }
+  },
   "diagnostics": {
     "tab": "Diagnostics",
     "logs": {
@@ -282,7 +319,6 @@
       }
     }
   },
-
   "about": {
     "tab": "About",
     "version": {

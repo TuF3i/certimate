@@ -15,8 +15,18 @@
     }
   },
 
-  "oauth2": {
-    "divider": "或",
-    "sign_in_with": "使用 {{provider}} 登录"
+  "sso": {
+    "divider": "或使用单点登录",
+    "sign_in_with": "使用 {{provider}} 登录",
+    "ldap": {
+      "username": {
+        "label": "用户名",
+        "placeholder": "LDAP 用户名"
+      },
+      "password": {
+        "label": "密码",
+        "placeholder": "LDAP 密码"
+      }
+    }
   }
 }

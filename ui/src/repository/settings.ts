@@ -4,10 +4,10 @@ import { CA_PROVIDERS } from "@/domain/provider";
 import {
   type EmailsSettingsContent,
   type NotifyTemplateContent,
-  type OAuth2SettingsContent,
   type PersistenceSettingsContent,
   SETTINGS_NAMES,
   type SSLProviderSettingsContent,
+  type SSOSettingsContent,
   type ScriptTemplateContent,
   type SettingsModel,
   type SettingsNames,
@@ -24,7 +24,7 @@ interface SettingsContentMap {
   [SETTINGS_NAMES.SCRIPT_TEMPLATE]: ScriptTemplateContent;
   [SETTINGS_NAMES.SSL_PROVIDER]: SSLProviderSettingsContent;
   [SETTINGS_NAMES.PERSISTENCE]: PersistenceSettingsContent;
-  [SETTINGS_NAMES.OAUTH2]: OAuth2SettingsContent;
+  [SETTINGS_NAMES.SSO]: SSOSettingsContent;
 }
 
 export const get = async <K extends SettingsNames | string, T extends NonNullable<unknown>>(
@@ -86,10 +86,11 @@ export const get = async <K extends SettingsNames | string, T extends NonNullabl
       }
       break;
 
-    case SETTINGS_NAMES.OAUTH2:
+    case SETTINGS_NAMES.SSO:
       {
         resp.content ??= {};
-        (resp.content as OAuth2SettingsContent).providers ??= [];
+        (resp.content as SSOSettingsContent).oidc ??= null;
+        (resp.content as SSOSettingsContent).ldap ??= null;
       }
       break;
   }

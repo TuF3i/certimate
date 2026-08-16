@@ -15,8 +15,18 @@
     }
   },
 
-  "oauth2": {
-    "divider": "or",
-    "sign_in_with": "Sign in with {{provider}}"
+  "sso": {
+    "divider": "or sign in with SSO",
+    "sign_in_with": "Sign in with {{provider}}",
+    "ldap": {
+      "username": {
+        "label": "Username",
+        "placeholder": "LDAP username"
+      },
+      "password": {
+        "label": "Password",
+        "placeholder": "LDAP password"
+      }
+    }
   }
 }

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { IconArrowRight, IconBrandGithub, IconLock, IconMail } from "@tabler/icons-react";
+import { IconArrowRight, IconLock, IconMail, IconUser } from "@tabler/icons-react";
 import { App, Button, Card, Divider, Form, Input, Space, Typography } from "antd";
 import { createSchemaFieldRule } from "antd-zod";
 import { z } from "zod";
@@ -12,7 +12,7 @@ import AppTheme from "@/components/AppTheme";
 import AppVersion from "@/components/AppVersion";
 import { useAntdForm, useBrowserTheme } from "@/hooks";
 import { loginWithPassword } from "@/repository/auth";
-import { type OAuth2Provider, consumeOAuth2Callback, listOAuth2Providers, startOAuth2Login } from "@/repository/oauth2";
+import { consumeSSOCallback, getSSOConfig, ldapLogin, startOIDCLogin } from "@/repository/sso";
 import { unwrapErrMsg } from "@/utils/error";
 import { withBasePath } from "@/utils/url";
 
@@ -23,21 +23,28 @@ const Login = () => {
 
   const { notification } = App.useApp();
   const { theme: browserTheme } = useBrowserTheme();
-  const [oauth2Providers, setOauth2Providers] = useState<OAuth2Provider[]>([]);
 
-  // 1. 初进入时检查后端是否在设置中启用了 OAuth2 提供商。
-  // 2. 如果 URL 有 oauth2_token 查询，则消费它并完成登录。
+  // SSO 状态：oidcEnabled / ldapEnabled 决定登录页额外区块是否展示。
+  const [oidcEnabled, setOidcEnabled] = useState(false);
+  const [oidcDisplayName, setOidcDisplayName] = useState("OIDC");
+  const [ldapEnabled, setLdapEnabled] = useState(false);
+  const [ldapDisplayName, setLdapDisplayName] = useState("LDAP");
+
   useEffect(() => {
     (async () => {
       try {
-        const list = await listOAuth2Providers();
-        setOauth2Providers(list);
+        const resp = await getSSOConfig();
+        setOidcEnabled(!!resp.config?.oidc?.enabled);
+        setOidcDisplayName(resp.config?.oidc?.displayName || "OIDC");
+        setLdapEnabled(!!resp.config?.ldap?.enabled);
+        setLdapDisplayName(resp.config?.ldap?.displayName || "LDAP");
       } catch (err) {
-        // 忽略明确的 401/404（后端未启用 OAuth2），仅在可观察错误时推入提示。
-        console.warn("[certimate] failed to list OAuth2 providers:", err);
+        // 后端未启用 SSO 时忽略，仅保留基础登录。
+        console.warn("[certimate] failed to load SSO config:", err);
       }
 
-      const consumed = await consumeOAuth2Callback();
+      // 消费 OIDC 回调带回的 token，完成自动登录。
+      const consumed = await consumeSSOCallback();
       if (consumed) {
         navigage("/", { replace: true });
       }
@@ -60,13 +67,6 @@ const Login = () => {
       maskImage: `linear-gradient(to bottom right, transparent, ${mask}, transparent)`,
     };
   }, [browserTheme]);
-
-  const renderOAuth2ProviderIcon = (name: string) => {
-    if (name === "github") {
-      return <IconBrandGithub size="1.25em" />;
-    }
-    return null;
-  };
 
   const formSchema = z.object({
     username: z.email(),
@@ -93,6 +93,8 @@ const Login = () => {
       }
     },
   });
+
+  const ssoEnabled = oidcEnabled || ldapEnabled;
 
   return (
     <>
@@ -131,26 +133,22 @@ const Login = () => {
               </Form.Item>
             </Form>
 
-            {oauth2Providers.length > 0 ? (
+            {ssoEnabled ? (
               <>
                 <div className="my-6">
                   <Divider plain>
-                    <Typography.Text type="secondary">{t("login.oauth2.divider")}</Typography.Text>
+                    <Typography.Text type="secondary">{t("login.sso.divider")}</Typography.Text>
                   </Divider>
                 </div>
 
                 <Space direction="vertical" className="w-full" size="middle">
-                  {oauth2Providers.map((p) => (
-                    <Button
-                      key={p.name}
-                      block
-                      size="large"
-                      icon={renderOAuth2ProviderIcon(p.name) || undefined}
-                      onClick={() => startOAuth2Login(p.name, window.location.pathname)}
-                    >
-                      {t("login.oauth2.sign_in_with", { provider: p.displayName || p.name })}
+                  {oidcEnabled ? (
+                    <Button block size="large" icon={<IconUser size="1.1em" />} onClick={() => startOIDCLogin(window.location.pathname)}>
+                      {t("login.sso.sign_in_with", { provider: oidcDisplayName })}
                     </Button>
-                  ))}
+                  ) : null}
+
+                  {ldapEnabled ? <LDAPLoginForm displayName={ldapDisplayName} /> : null}
                 </Space>
               </>
             ) : null}
@@ -185,6 +183,69 @@ const Login = () => {
         </Card>
       </div>
     </>
+  );
+};
+
+// LDAP 登录表单：用户名 + 密码，走后端绑定认证。
+const LDAPLoginForm = ({ displayName }: { displayName: string }) => {
+  const navigage = useNavigate();
+
+  const { t } = useTranslation();
+
+  const { notification } = App.useApp();
+
+  const formSchema = z.object({
+    username: z.string().min(1).max(256),
+    password: z.string().min(1).max(256),
+  });
+  const formRule = createSchemaFieldRule(formSchema);
+  const {
+    form: formInst,
+    formPending,
+    formProps,
+  } = useAntdForm<z.infer<typeof formSchema>>({
+    initialValues: {
+      username: "",
+      password: "",
+    },
+    onSubmit: async (values) => {
+      try {
+        await ldapLogin(values.username, values.password);
+        await navigage("/");
+      } catch (err) {
+        notification.error({ title: t("common.text.request_error"), description: unwrapErrMsg(err) });
+
+        throw err;
+      }
+    },
+  });
+
+  return (
+    <Form {...formProps} form={formInst} disabled={formPending} layout="vertical" validateTrigger="onBlur">
+      <Form.Item name="username" label={t("login.sso.ldap.username.label")} rules={[formRule]}>
+        <Space.Compact block>
+          <Space.Addon>
+            <IconUser size="1.1em" />
+          </Space.Addon>
+          <Input autoComplete="new-password" placeholder={t("login.sso.ldap.username.placeholder")} size="large" />
+        </Space.Compact>
+      </Form.Item>
+
+      <Form.Item name="password" label={t("login.sso.ldap.password.label")} rules={[formRule]}>
+        <Space.Compact block>
+          <Space.Addon>
+            <IconLock size="1.1em" />
+          </Space.Addon>
+          <Input.Password autoComplete="new-password" placeholder={t("login.sso.ldap.password.placeholder")} size="large" />
+        </Space.Compact>
+      </Form.Item>
+
+      <Form.Item className="mb-0">
+        <Button block size="large" htmlType="submit" loading={formPending}>
+          {t("login.sso.sign_in_with", { provider: displayName })}
+        </Button>
+      </Form.Item>
+    </Form>
   );
 };
 

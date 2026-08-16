@@ -15,7 +15,7 @@ const Settings = () => {
     ["appearance", "settings.appearance.tab", <IconPalette size="1em" />],
     ["ssl-provider", "settings.sslprovider.tab", <IconPlugConnected size="1em" />],
     ["persistence", "settings.persistence.tab", <IconDatabaseCog size="1em" />],
-    ["oauth2", "settings.oauth2.tab", <IconKey size="1em" />],
+    ["sso", "settings.sso.tab", <IconKey size="1em" />],
     ["diagnostics", "settings.diagnostics.tab", <IconHeartRateMonitor size="1em" />],
     ["about", "settings.about.tab", <IconInfoCircle size="1em" />],
   ] satisfies [string, string, React.ReactElement][];

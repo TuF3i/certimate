@@ -13,9 +13,9 @@ import Settings from "@/pages/settings/Settings";
 import SettingsAbout from "@/pages/settings/SettingsAbout";
 import SettingsAppearance from "@/pages/settings/SettingsAppearance";
 import SettingsDiagnostics from "@/pages/settings/SettingsDiagnostics";
-import SettingsOAuth2 from "@/pages/settings/SettingsOAuth2";
 import SettingsPersistence from "@/pages/settings/SettingsPersistence";
 import SettingsSSLProvider from "@/pages/settings/SettingsSSLProvider";
+import SettingsSSO from "@/pages/settings/SettingsSSO";
 import SettingsUsers from "@/pages/settings/SettingsUsers";
 import WorkflowDetail from "@/pages/workflows/WorkflowDetail";
 import WorkflowDetailDesign from "@/pages/workflows/WorkflowDetailDesign";
@@ -91,8 +91,8 @@ export const router = createHashRouter([
             element: <SettingsPersistence />,
           },
           {
-            path: "/settings/oauth2",
-            element: <SettingsOAuth2 />,
+            path: "/settings/sso",
+            element: <SettingsSSO />,
           },
           {
             path: "/settings/diagnostics",

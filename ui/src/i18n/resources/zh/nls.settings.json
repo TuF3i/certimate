@@ -1,10 +1,8 @@
 {
   "$ns": "settings",
-
   "page": {
     "heading": "系统设置"
   },
-
   "users": {
     "tab": "用户",
     "title": "用户管理",
@@ -80,32 +78,6 @@
       }
     }
   },
-
-  "oauth2": {
-    "tab": "OAuth2",
-    "providers": {
-      "title": "OAuth2 身份提供商",
-      "add_preset": "添加 {{provider}}",
-      "tips": "配置一个或多个 OAuth2 身份提供商，登录页将出现对应的「使用 … 登录」按钮。未填写的端点将使用内置预设。",
-      "enabled": "已启用",
-      "disabled": "未启用",
-      "form": {
-        "enabled": { "label": "启用" },
-        "display_name": { "label": "显示名" },
-        "client_id": { "label": "Client ID（客户端 ID）" },
-        "client_secret": { "label": "Client Secret（客户端密钥）" },
-        "redirect_url": { "label": "回调地址" },
-        "scopes": { "label": "Scopes（空格分隔）" },
-        "auth_url": { "label": "授权 URL", "placeholder": "留空使用预设" },
-        "token_url": { "label": "令牌 URL", "placeholder": "留空使用预设" },
-        "user_info_url": { "label": "UserInfo URL", "placeholder": "留空使用预设" },
-        "subject_field": { "label": "Subject 字段名（可选）" },
-        "auto_create": { "label": "首次登录时自动创建超级管理员" },
-        "auto_create_prefix": { "label": "自动创建账号的邮箱前缀" }
-      }
-    }
-  },
-
   "account": {
     "tab": "账号",
     "username": {
@@ -153,7 +125,6 @@
       "title": "双因子认证（2FA）"
     }
   },
-
   "appearance": {
     "tab": "外观",
     "theme": {
@@ -196,7 +167,6 @@
       }
     }
   },
-
   "sslprovider": {
     "tab": "证书颁发机构",
     "ca": {
@@ -222,7 +192,6 @@
       }
     }
   },
-
   "persistence": {
     "tab": "数据持久化",
     "alerting": {
@@ -254,7 +223,74 @@
       }
     }
   },
-
+  "sso": {
+    "tab": "单点登录",
+    "title": "单点登录 (SSO)",
+    "tips": "可分别配置一个 OIDC 提供商与一个 LDAP 提供商。OIDC 用户通过授权码流程登录（回调地址见下方）；LDAP 用户使用目录中的用户名和密码登录。",
+    "enabled": "已启用",
+    "disabled": "未启用",
+    "oidc": {
+      "title": "OIDC 提供商",
+      "copy_callback": "复制回调地址",
+      "form": {
+        "display_name": {
+          "label": "显示名"
+        },
+        "discovery_url": {
+          "label": "Discovery URL（发现端点）"
+        },
+        "scopes": {
+          "label": "Scopes（空格分隔）"
+        }
+      }
+    },
+    "ldap": {
+      "title": "LDAP 提供商",
+      "form": {
+        "display_name": {
+          "label": "显示名"
+        },
+        "server_url": {
+          "label": "服务器地址"
+        },
+        "bind_dn": {
+          "label": "服务账号 DN"
+        },
+        "bind_password": {
+          "label": "服务账号密码"
+        },
+        "search_base": {
+          "label": "搜索基 DN"
+        },
+        "search_filter": {
+          "label": "搜索过滤器"
+        },
+        "email_attribute": {
+          "label": "邮箱属性"
+        },
+        "name_attribute": {
+          "label": "显示名属性"
+        }
+      }
+    },
+    "form": {
+      "enabled": {
+        "label": "启用"
+      },
+      "client_id": {
+        "label": "Client ID（客户端 ID）"
+      },
+      "client_secret": {
+        "label": "Client Secret（客户端密钥）"
+      },
+      "auto_create": {
+        "label": "首次登录自动创建成员账号"
+      },
+      "auto_create_prefix": {
+        "label": "自动创建账号的邮箱前缀"
+      }
+    }
+  },
   "diagnostics": {
     "tab": "系统诊断",
     "logs": {
@@ -283,7 +319,6 @@
       }
     }
   },
-
   "about": {
     "tab": "关于",
     "version": {
