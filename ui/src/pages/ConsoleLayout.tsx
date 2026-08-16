@@ -9,22 +9,27 @@ import {
   IconHelpCircle,
   IconHierarchy3,
   IconHome,
+  IconKey,
   IconLayoutSidebarLeftCollapse,
   IconLayoutSidebarRightCollapse,
   IconMenu2,
   IconPower,
   IconSettings,
 } from "@tabler/icons-react";
-import { Alert, Button, Drawer, Layout, Menu, type MenuProps, theme } from "antd";
+import { Alert, App, Button, Drawer, Form, Input, Layout, Menu, type MenuProps, Modal, theme } from "antd";
+import { createSchemaFieldRule } from "antd-zod";
+import { z } from "zod";
 
 import AppLocale from "@/components/AppLocale";
 import AppTheme from "@/components/AppTheme";
 import AppVersion from "@/components/AppVersion";
 import Show from "@/components/Show";
 import { APP_DOCUMENT_URL, APP_REPO_URL } from "@/domain/app";
-import { useTriggerElement } from "@/hooks";
+import { useAntdForm, useTriggerElement } from "@/hooks";
 import { getAuthStore } from "@/repository/admin";
+import { authWithPassword, updatePassword } from "@/repository/user";
 import { isBrowserHappy } from "@/utils/browser";
+import { unwrapErrMsg } from "@/utils/error";
 import { withBasePath } from "@/utils/url";
 
 const ConsoleLayout = () => {
@@ -35,6 +40,7 @@ const ConsoleLayout = () => {
   const { token: themeToken } = theme.useToken();
 
   const [siderCollapsed, setSiderCollapsed] = useState(false);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
   const handleLogoutClick = () => {
     auth.clear();
@@ -50,9 +56,11 @@ const ConsoleLayout = () => {
   };
 
   const auth = getAuthStore();
-  if (!auth.isValid || !auth.isSuperuser) {
+  // 多用户模式：超级管理员（_superusers）与成员（users）均可进入控制台。
+  if (!auth.isValid) {
     return <Navigate to="/login" />;
   }
+  const isMember = !auth.isSuperuser;
 
   return (
     <Layout className="h-screen bg-background text-foreground">
@@ -86,6 +94,20 @@ const ConsoleLayout = () => {
                     label: t("common.menu.gethelp"),
                     onClick: handleDocumentClick,
                   },
+                  ...(isMember
+                    ? [
+                        {
+                          key: "change-password",
+                          icon: (
+                            <span className="anticon scale-125" role="img">
+                              <IconKey size="1em" />
+                            </span>
+                          ),
+                          label: t("common.menu.change_password"),
+                          onClick: () => setChangePasswordOpen(true),
+                        },
+                      ]
+                    : []),
                   {
                     key: "logout",
                     danger: true,
@@ -164,6 +186,8 @@ const ConsoleLayout = () => {
           </Layout.Content>
         </Layout>
       </Layout>
+
+      {isMember ? <ChangePasswordModal open={changePasswordOpen} onClose={() => setChangePasswordOpen(false)} /> : null}
     </Layout>
   );
 };
@@ -180,6 +204,8 @@ const SiderMenu = memo(({ collapsed, onSelect }: { collapsed?: boolean; onSelect
   const MENU_KEY_ACCESSES = "/accesses";
   const MENU_KEY_PRESETS = "/presets";
   const MENU_KEY_SETTINGS = "/settings";
+  // 设置菜单仅超级管理员可见。
+  const isSuperuser = getAuthStore().isSuperuser;
   const menuItems: Required<MenuProps>["items"] = (
     [
       [MENU_KEY_HOME, "dashboard.page.heading", <IconHome size="1em" />],
@@ -187,8 +213,9 @@ const SiderMenu = memo(({ collapsed, onSelect }: { collapsed?: boolean; onSelect
       [MENU_KEY_CERTIFICATES, "certificate.page.heading", <IconCertificate size="1em" />],
       [MENU_KEY_ACCESSES, "access.page.heading", <IconFingerprint size="1em" />],
       [MENU_KEY_PRESETS, "preset.page.heading", <IconCodeDots size="1em" />],
-      [MENU_KEY_SETTINGS, "settings.page.heading", <IconSettings size="1em" />],
-    ] satisfies Array<[string, string, React.ReactNode]>
+      // 设置菜单仅超级管理员可见。
+      ...(isSuperuser ? [[MENU_KEY_SETTINGS, "settings.page.heading", <IconSettings size="1em" />]] : []),
+    ] as Array<[string, string, React.ReactNode]>
   ).map(([key, label, icon]) => {
     return {
       key: key,
@@ -286,5 +313,97 @@ const SiderMenuDrawer = memo(({ trigger }: { trigger: React.ReactNode }) => {
     </>
   );
 });
+
+interface ChangePasswordModalProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+// 成员（users 集合）修改自己的密码：先验证旧密码，再重置新密码。
+const ChangePasswordModal = ({ open, onClose }: ChangePasswordModalProps) => {
+  const navigate = useNavigate();
+
+  const { t } = useTranslation();
+
+  const { message, notification } = App.useApp();
+
+  const formSchema = z
+    .object({
+      oldPassword: z.string().min(10).max(256),
+      newPassword: z.string().min(10).max(256),
+      confirmPassword: z.string().min(10).max(256),
+    })
+    .refine((values) => values.newPassword === values.confirmPassword, {
+      error: t("common.change_password.confirm.errmsg.not_matched"),
+      path: ["confirmPassword"],
+    });
+  const formRule = createSchemaFieldRule(formSchema);
+  const {
+    form: formInst,
+    formPending,
+    formProps,
+  } = useAntdForm({
+    initialValues: {
+      oldPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    },
+    onSubmit: async (values) => {
+      const auth = getAuthStore();
+      if (!auth.record?.email || !auth.record?.id) {
+        return;
+      }
+
+      try {
+        // 先验证旧密码，再更新新密码。
+        await authWithPassword(auth.record.email, values.oldPassword);
+        await updatePassword(auth.record.id, values.newPassword);
+
+        message.success(t("common.text.operation_succeeded"));
+
+        setTimeout(() => {
+          auth.clear();
+          navigate("/login");
+        }, 500);
+      } catch (err) {
+        notification.error({ title: t("common.text.request_error"), description: unwrapErrMsg(err) });
+
+        throw err;
+      }
+    },
+  });
+
+  return (
+    <Modal
+      open={open}
+      title={t("common.menu.change_password")}
+      footer={null}
+      onCancel={() => {
+        formInst.resetFields();
+        onClose();
+      }}
+    >
+      <Form {...formProps} form={formInst} layout="vertical" validateTrigger="onBlur">
+        <Form.Item name="oldPassword" label={t("common.change_password.old_password.label")} rules={[formRule]}>
+          <Input.Password autoFocus placeholder={t("common.change_password.old_password.placeholder")} />
+        </Form.Item>
+
+        <Form.Item name="newPassword" label={t("common.change_password.new_password.label")} rules={[formRule]}>
+          <Input.Password placeholder={t("common.change_password.new_password.placeholder")} />
+        </Form.Item>
+
+        <Form.Item name="confirmPassword" label={t("common.change_password.confirm.label")} rules={[formRule]}>
+          <Input.Password placeholder={t("common.change_password.confirm.placeholder")} />
+        </Form.Item>
+
+        <Form.Item className="mb-0">
+          <Button block type="primary" htmlType="submit" loading={formPending}>
+            {t("common.change_password.submit")}
+          </Button>
+        </Form.Item>
+      </Form>
+    </Modal>
+  );
+};
 
 export default ConsoleLayout;

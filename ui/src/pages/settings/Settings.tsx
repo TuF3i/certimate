@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { IconDatabaseCog, IconHeartRateMonitor, IconInfoCircle, IconKey, IconPalette, IconPlugConnected, IconUserShield } from "@tabler/icons-react";
+import { IconDatabaseCog, IconHeartRateMonitor, IconInfoCircle, IconKey, IconPalette, IconPlugConnected, IconUserShield, IconUsers } from "@tabler/icons-react";
 import { Menu } from "antd";
 
 const Settings = () => {
@@ -13,6 +13,7 @@ const Settings = () => {
   const menus = [
     ["account", "settings.account.tab", <IconUserShield size="1em" />],
     ["appearance", "settings.appearance.tab", <IconPalette size="1em" />],
+    ["users", "settings.users.tab", <IconUsers size="1em" />],
     ["ssl-provider", "settings.sslprovider.tab", <IconPlugConnected size="1em" />],
     ["persistence", "settings.persistence.tab", <IconDatabaseCog size="1em" />],
     ["oauth2", "settings.oauth2.tab", <IconKey size="1em" />],

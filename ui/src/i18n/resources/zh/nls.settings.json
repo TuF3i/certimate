@@ -5,6 +5,47 @@
     "heading": "系统设置"
   },
 
+  "users": {
+    "tab": "用户",
+    "title": "用户管理",
+    "tips": "只有管理员可以创建和管理成员账号。成员与管理员共享同一份证书、工作流与授权资源。",
+    "create": {
+      "button": "创建用户",
+      "title": "创建用户",
+      "submit": "创建"
+    },
+    "reset": {
+      "title": "重置密码：{{email}}",
+      "submit": "重置"
+    },
+    "table": {
+      "email": "邮箱",
+      "name": "显示名",
+      "verified": "已验证",
+      "verified_yes": "是",
+      "verified_no": "否",
+      "actions": "操作",
+      "reset_password": "重置密码",
+      "delete": "删除",
+      "delete_confirm": "确定要删除该用户吗？"
+    },
+    "form": {
+      "email": {
+        "label": "邮箱",
+        "placeholder": "请输入邮箱"
+      },
+      "name": {
+        "label": "显示名",
+        "placeholder": "选填"
+      },
+      "password": {
+        "label": "初始密码",
+        "placeholder": "请输入密码（至少 10 位）",
+        "help": "至少 10 位。成员登录后可在 <b>设置 → 账号</b> 中自行修改。"
+      }
+    }
+  },
+
   "oauth2": {
     "tab": "OAuth2",
     "providers": {

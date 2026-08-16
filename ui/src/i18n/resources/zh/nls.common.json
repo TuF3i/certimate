@@ -22,19 +22,38 @@
   },
 
   "text": {
-    "copied": "已复制到剪贴板",
-    "import_from_file": "从文件导入 ……",
-    "happy_browser": "当前浏览器版本过低，Certimate WebUI 无法正常工作。推荐使用 Google Chrome v119.0 或更高版本的现代浏览器。",
+    "copied": "已复制",
+    "import_from_file": "从文件导入...",
+    "happy_browser": "当前浏览器版本过低，可能导致 Certimate WebUI 无法正常工作。建议使用 Chrome 119 或更高版本的现代浏览器。",
     "nodata": "暂无数据",
-    "nodata_failed": "加载失败",
+    "nodata_failed": "数据加载失败",
     "operation_confirm": "操作确认",
     "operation_succeeded": "操作成功",
     "operation_failed": "操作失败",
     "random_roll": "随机生成",
-    "request_error": "请求错误",
-    "saved": "已保存",
-    "saving": "保存中 ……",
-    "search": "搜索 ……"
+    "request_error": "请求出错",
+    "saved": "保存成功",
+    "saving": "保存中...",
+    "search": "搜索..."
+  },
+
+  "change_password": {
+    "old_password": {
+      "label": "当前密码",
+      "placeholder": "请输入当前密码"
+    },
+    "new_password": {
+      "label": "新密码",
+      "placeholder": "请输入新密码"
+    },
+    "confirm": {
+      "label": "确认新密码",
+      "placeholder": "请再次输入新密码",
+      "errmsg": {
+        "not_matched": "两次输入的密码不一致"
+      }
+    },
+    "submit": "修改密码"
   },
 
   "menu": {
@@ -42,6 +61,7 @@
     "theme": "切换主题",
     "locale": "切换语言",
     "gethelp": "获取帮助",
+    "change_password": "修改密码",
     "logout": "退出登录"
   },
 

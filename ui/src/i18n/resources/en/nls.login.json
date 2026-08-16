@@ -1,6 +1,13 @@
 {
   "$ns": "login",
 
+  "role": {
+    "tab": {
+      "admin": "Administrator",
+      "user": "Member"
+    }
+  },
+
   "form": {
     "username": {
       "label": "Username",

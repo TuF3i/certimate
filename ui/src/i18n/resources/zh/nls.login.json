@@ -1,6 +1,13 @@
 {
   "$ns": "login",
 
+  "role": {
+    "tab": {
+      "admin": "管理员",
+      "user": "成员"
+    }
+  },
+
   "form": {
     "username": {
       "label": "用户名/邮箱",

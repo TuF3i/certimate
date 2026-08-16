@@ -17,6 +17,7 @@ export const getPocketBase = () => {
 };
 
 export const COLLECTION_NAME_ADMIN = "_superusers";
+export const COLLECTION_NAME_USER = "users";
 export const COLLECTION_NAME_ACCESS = "access";
 export const COLLECTION_NAME_CERTIFICATE = "certificate";
 export const COLLECTION_NAME_SETTINGS = "settings";

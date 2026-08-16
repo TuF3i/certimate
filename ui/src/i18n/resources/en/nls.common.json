@@ -37,11 +37,31 @@
     "search": "Search ..."
   },
 
+  "change_password": {
+    "old_password": {
+      "label": "Current password",
+      "placeholder": "Please enter the current password"
+    },
+    "new_password": {
+      "label": "New password",
+      "placeholder": "Please enter the new password"
+    },
+    "confirm": {
+      "label": "Confirm password",
+      "placeholder": "Please enter the new password again",
+      "errmsg": {
+        "not_matched": "The two passwords do not match"
+      }
+    },
+    "submit": "Change password"
+  },
+
   "menu": {
     "document": "Document",
     "theme": "Change theme",
     "locale": "Change language",
     "gethelp": "Get help",
+    "change_password": "Change password",
     "logout": "Log-out"
   },
 

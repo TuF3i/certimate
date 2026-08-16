@@ -17,6 +17,7 @@ import SettingsDiagnostics from "@/pages/settings/SettingsDiagnostics";
 import SettingsOAuth2 from "@/pages/settings/SettingsOAuth2";
 import SettingsPersistence from "@/pages/settings/SettingsPersistence";
 import SettingsSSLProvider from "@/pages/settings/SettingsSSLProvider";
+import SettingsUsers from "@/pages/settings/SettingsUsers";
 import WorkflowDetail from "@/pages/workflows/WorkflowDetail";
 import WorkflowDetailDesign from "@/pages/workflows/WorkflowDetailDesign";
 import WorkflowDetailRuns from "@/pages/workflows/WorkflowDetailRuns";
@@ -81,6 +82,10 @@ export const router = createHashRouter([
           {
             path: "/settings/appearance",
             element: <SettingsAppearance />,
+          },
+          {
+            path: "/settings/users",
+            element: <SettingsUsers />,
           },
           {
             path: "/settings/ssl-provider",

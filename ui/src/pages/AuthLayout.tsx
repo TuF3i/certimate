@@ -10,7 +10,8 @@ const AuthLayout = () => {
   const { t } = useTranslation();
 
   const auth = getAuthStore();
-  if (auth.isValid && auth.isSuperuser) {
+  // 多用户模式：管理员或成员已登录时均重定向到控制台。
+  if (auth.isValid) {
     return <Navigate to="/" />;
   }
 
