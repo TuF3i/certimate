@@ -1,7 +1,7 @@
 import type { RecordModel } from "pocketbase";
 
 import { type SSOSettingsContent } from "@/domain/settings";
-import { getBasePath } from "@/utils/url";
+import { withBasePath } from "@/utils/url";
 
 import { getPocketBase } from "./_pocketbase";
 
@@ -33,7 +33,7 @@ export function startOIDCLogin(returnUrl?: string): void {
   if (returnUrl) {
     params.set("returnUrl", returnUrl);
   }
-  window.location.href = `${getBasePath()}/api/sso/redirect?${params.toString()}`;
+  window.location.href = withBasePath(`/api/sso/redirect?${params.toString()}`);
 }
 
 /**

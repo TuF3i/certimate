@@ -82,8 +82,9 @@ func (s *Service) GetEnabledLDAP(ctx context.Context) (*domain.SettingsContentFo
 }
 
 // BuildAuthorizeURL 生成跳转到 OIDC 提供商的授权 URL，并写出一次性 state。
-// redirectURL 为统一的回调地址（由请求侧按当前访问地址计算）。
-func (s *Service) BuildAuthorizeURL(ctx context.Context, oidcCfg *domain.SettingsContentForSSOOIDC, redirectURL string) (string, error) {
+// redirectURL 为统一的回调地址（由请求侧按当前访问地址计算）；
+// returnURL 为登录成功后前端跳转地址（随 state 存留，回调时取回）。
+func (s *Service) BuildAuthorizeURL(ctx context.Context, oidcCfg *domain.SettingsContentForSSOOIDC, redirectURL, returnURL string) (string, error) {
 	if redirectURL == "" {
 		return "", errors.New("OIDC redirect URL is empty")
 	}
@@ -96,7 +97,7 @@ func (s *Service) BuildAuthorizeURL(ctx context.Context, oidcCfg *domain.Setting
 		return "", errors.New("OIDC discovery does not contain authorization_endpoint")
 	}
 
-	state, err := s.issueState(ProviderOIDC)
+	state, err := s.issueState(ProviderOIDC, returnURL)
 	if err != nil {
 		return "", err
 	}
@@ -118,53 +119,54 @@ func (s *Service) BuildAuthorizeURL(ctx context.Context, oidcCfg *domain.Setting
 }
 
 // HandleOIDCCallback 完成 OIDC 回调：校验 state、用 code 换 access_token、拉取 userinfo、
-// 关联或（若允许）自动创建普通用户，并返回账号记录与新颁发的鉴权 token。
-func (s *Service) HandleOIDCCallback(ctx context.Context, code, state, redirectURL string) (*core.Record, string, error) {
+// 关联或（若允许）自动创建普通用户，并返回账号记录、新颁发的鉴权 token 与登录前跳转地址。
+func (s *Service) HandleOIDCCallback(ctx context.Context, code, state, redirectURL string) (*core.Record, string, string, error) {
 	if redirectURL == "" {
-		return nil, "", errors.New("OIDC redirect URL is empty")
+		return nil, "", "", errors.New("OIDC redirect URL is empty")
 	}
 
 	oidcCfg, err := s.GetEnabledOIDC(ctx)
 	if err != nil {
-		return nil, "", err
+		return nil, "", "", err
 	}
-	if err := s.consumeState(state, ProviderOIDC); err != nil {
-		return nil, "", err
+	returnURL, err := s.consumeState(state, ProviderOIDC)
+	if err != nil {
+		return nil, "", "", err
 	}
 	if code == "" {
-		return nil, "", errors.New("missing authorization code")
+		return nil, "", "", errors.New("missing authorization code")
 	}
 
 	discovery, err := s.fetchOIDCDiscovery(ctx, oidcCfg.DiscoveryURL)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to fetch OIDC discovery: %w", err)
+		return nil, "", "", fmt.Errorf("failed to fetch OIDC discovery: %w", err)
 	}
 
 	accessToken, err := s.exchangeOIDCCode(ctx, oidcCfg.ClientID, oidcCfg.ClientSecret, discovery, code, redirectURL)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to exchange code: %w", err)
+		return nil, "", "", fmt.Errorf("failed to exchange code: %w", err)
 	}
 
 	profile, err := s.fetchOIDCUserInfo(ctx, discovery, accessToken)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to fetch userinfo: %w", err)
+		return nil, "", "", fmt.Errorf("failed to fetch userinfo: %w", err)
 	}
 
 	subject := stringField(profile, "sub")
 	if subject == "" {
-		return nil, "", errors.New("userinfo does not contain 'sub' claim")
+		return nil, "", "", errors.New("userinfo does not contain 'sub' claim")
 	}
 
 	account, err := s.resolveAccount(ctx, ProviderOIDC, subject, profile["email"], profile["name"], oidcCfg.AutoCreate)
 	if err != nil {
-		return nil, "", err
+		return nil, "", "", err
 	}
 
 	tokenStr, err := account.NewAuthToken()
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to issue auth token: %w", err)
+		return nil, "", "", fmt.Errorf("failed to issue auth token: %w", err)
 	}
-	return account, tokenStr, nil
+	return account, tokenStr, returnURL, nil
 }
 
 // HandleLDAPLogin 完成 LDAP 用户名密码认证：绑定验证后关联或创建普通用户。
@@ -305,41 +307,43 @@ func (s *Service) createUser(ctx context.Context, providerName, subject, email, 
 
 // --- state store ---
 
-func (s *Service) issueState(providerName string) (string, error) {
+func (s *Service) issueState(providerName, returnURL string) (string, error) {
 	buf := make([]byte, 24)
 	if _, err := rand.Read(buf); err != nil {
 		return "", err
 	}
 	state := base64.RawURLEncoding.EncodeToString(buf)
 	app.GetApp().Store().Set(stateKey(state), map[string]any{
-		"provider": providerName,
-		"expires":  time.Now().Add(oidcStateTTL).Unix(),
+		"provider":  providerName,
+		"returnUrl": returnURL,
+		"expires":   time.Now().Add(oidcStateTTL).Unix(),
 	})
 	return state, nil
 }
 
-func (s *Service) consumeState(state, providerName string) error {
+func (s *Service) consumeState(state, providerName string) (string, error) {
 	if state == "" {
-		return errors.New("missing state")
+		return "", errors.New("missing state")
 	}
 	key := stateKey(state)
 	val := app.GetApp().Store().Get(key)
 	if val == nil {
-		return errors.New("invalid or expired sso state")
+		return "", errors.New("invalid or expired sso state")
 	}
 	m, ok := val.(map[string]any)
 	if !ok {
-		return errors.New("invalid sso state payload")
+		return "", errors.New("invalid sso state payload")
 	}
 	if exp, _ := m["expires"].(int64); exp > 0 && time.Now().Unix() > exp {
 		app.GetApp().Store().Remove(key)
-		return errors.New("expired sso state")
+		return "", errors.New("expired sso state")
 	}
 	if p, _ := m["provider"].(string); p != providerName {
-		return errors.New("sso state does not match provider")
+		return "", errors.New("sso state does not match provider")
 	}
+	returnURL, _ := m["returnUrl"].(string)
 	app.GetApp().Store().Remove(key)
-	return nil
+	return returnURL, nil
 }
 
 func stateKey(state string) string {

@@ -47,7 +47,7 @@ func (h *SSOHandler) redirect(e *core.RequestEvent) error {
 		return resp.Err(e, err)
 	}
 
-	authURL, err := h.service.BuildAuthorizeURL(e.Request.Context(), oidcCfg, h.callbackURL(e))
+	authURL, err := h.service.BuildAuthorizeURL(e.Request.Context(), oidcCfg, h.callbackURL(e), e.Request.URL.Query().Get("returnUrl"))
 	if err != nil {
 		return resp.Err(e, err)
 	}
@@ -65,12 +65,13 @@ func (h *SSOHandler) callback(e *core.RequestEvent) error {
 		return resp.Err(e, domain.NewError(400, "invalid sso callback"))
 	}
 
-	account, token, err := h.service.HandleOIDCCallback(e.Request.Context(), code, state, h.callbackURL(e))
+	account, token, returnURL, err := h.service.HandleOIDCCallback(e.Request.Context(), code, state, h.callbackURL(e))
 	if err != nil {
 		return resp.Err(e, err)
 	}
 
-	redirectTarget := q.Get("returnUrl")
+	// 登录成功后的跳转地址：优先用发起登录时随 state 存留的 returnUrl。
+	redirectTarget := returnURL
 	if redirectTarget == "" {
 		redirectTarget = "/login"
 	}
