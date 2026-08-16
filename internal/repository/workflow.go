@@ -129,6 +129,7 @@ func (r *WorkflowRepository) castRecordToModel(record *core.Record) (*domain.Wor
 		LastRunId:     record.GetString("lastRunRef"),
 		LastRunStatus: domain.WorkflowRunStatusType(record.GetString("lastRunStatus")),
 		LastRunTime:   record.GetDateTime("lastRunTime").Time(),
+		GrantedUsers:  record.GetStringSlice("grantedUsers"),
 	}
 	return workflow, nil
 }

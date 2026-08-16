@@ -204,30 +204,34 @@ func (s *Service) HandleCallback(ctx context.Context, providerName, code, state,
 		return nil, "", fmt.Errorf("userinfo does not contain subject field %q", provider.SubjectField)
 	}
 
-	superuser, err := s.resolveSuperuser(ctx, providerName, subject, profile, provider)
+	account, err := s.resolveAccount(ctx, providerName, subject, profile, provider)
 	if err != nil {
 		return nil, "", err
 	}
 
-	tokenStr, err := superuser.NewAuthToken()
+	tokenStr, err := account.NewAuthToken()
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to issue auth token: %w", err)
 	}
 
-	return superuser, tokenStr, nil
+	return account, tokenStr, nil
 }
 
-// resolveSuperuser 根据 (provider, subject) 关联查找已绑定的超级管理员；
-// 不存在时若 provider 允许 autoCreate 且无其他安全限制，则尝试创建一个超级管理员账户并绑定。
-func (s *Service) resolveSuperuser(ctx context.Context, providerName, subject string, profile map[string]any, provider *ResolvedProvider) (*core.Record, error) {
+// resolveAccount 根据 (provider, subject) 关联查找已绑定的账号（超级管理员或普通用户）；
+// 不存在时若 provider 允许 autoCreate 且无其他安全限制，则尝试创建一个普通用户账号并绑定。
+func (s *Service) resolveAccount(ctx context.Context, providerName, subject string, profile map[string]any, provider *ResolvedProvider) (*core.Record, error) {
 	link, err := s.linkRepo.GetByProviderAndSubject(ctx, providerName, subject)
 	if err != nil && !errors.Is(err, domain.ErrRecordNotFound) {
 		return nil, err
 	}
 	if link != nil {
-		rec, err := app.GetApp().FindRecordById("_superusers", link.SuperuserId)
+		target := link.TargetCollection
+		if target == "" {
+			target = core.CollectionNameSuperusers // 兼容旧数据
+		}
+		rec, err := app.GetApp().FindRecordById(target, link.SuperuserId)
 		if err != nil {
-			// 关联的 superuser 已被删除，清理失效链接后允许自动重建（若开启）。
+			// 关联的账号已被删除，清理失效链接后允许自动重建（若开启）。
 			_ = s.linkRepo.Delete(ctx, link.Id)
 		} else {
 			// 刷新最近一次的 profile 快照。
@@ -239,36 +243,40 @@ func (s *Service) resolveSuperuser(ctx context.Context, providerName, subject st
 		}
 	}
 
-	// 关联不存在；尝试以 email 在已有 superuser 中匹配并绑定，避免重复账号。
+	// 关联不存在；尝试以 email 在已有账号（先管理员、后成员）中匹配并绑定，避免重复账号。
 	if email := stringField(profile, provider.EmailField); email != "" {
-		existing, err := app.GetApp().FindFirstRecordByFilter("_superusers", "email={:email}", dbx.Params{"email": email})
-		if err == nil && existing != nil {
-			if err := s.bindLink(ctx, providerName, subject, existing.Id, profile, provider); err != nil {
-				return nil, err
+		for _, collectionName := range []string{core.CollectionNameSuperusers, "users"} {
+			existing, err := app.GetApp().FindFirstRecordByFilter(collectionName, "email={:email}", dbx.Params{"email": email})
+			if err == nil && existing != nil {
+				if err := s.bindLink(ctx, providerName, subject, existing.Id, collectionName, profile, provider); err != nil {
+					return nil, err
+				}
+				return existing, nil
 			}
-			return existing, nil
 		}
 	}
 
 	if !provider.Settings.AutoCreate {
-		return nil, fmt.Errorf("no superuser linked to oauth2 provider %q ( administrators must first link it in settings )", providerName)
+		return nil, fmt.Errorf("no account linked to oauth2 provider %q ( administrators must first link it in settings )", providerName)
 	}
 
-	superuser, err := s.createSuperuser(ctx, providerName, subject, profile, provider)
+	// OIDC/OAuth2 自动创建的账号默认是普通用户（users 集合，role=user）。
+	account, err := s.createUser(ctx, providerName, subject, profile, provider)
 	if err != nil {
 		return nil, err
 	}
-	if err := s.bindLink(ctx, providerName, subject, superuser.Id, profile, provider); err != nil {
+	if err := s.bindLink(ctx, providerName, subject, account.Id, "users", profile, provider); err != nil {
 		return nil, err
 	}
-	return superuser, nil
+	return account, nil
 }
 
-func (s *Service) bindLink(ctx context.Context, providerName, subject, superuserId string, profile map[string]any, provider *ResolvedProvider) error {
+func (s *Service) bindLink(ctx context.Context, providerName, subject, accountId, targetCollection string, profile map[string]any, provider *ResolvedProvider) error {
 	link := &domain.OAuth2Link{
 		Provider:          providerName,
 		SubjectId:         subject,
-		SuperuserId:       superuserId,
+		TargetCollection:  targetCollection,
+		SuperuserId:       accountId,
 		UserProfileEmail:  stringField(profile, provider.EmailField),
 		UserProfileName:   stringField(profile, provider.NameField),
 		UserProfileAvatar: stringField(profile, provider.AvatarField),
@@ -277,8 +285,9 @@ func (s *Service) bindLink(ctx context.Context, providerName, subject, superuser
 	return err
 }
 
-func (s *Service) createSuperuser(ctx context.Context, providerName, subject string, profile map[string]any, provider *ResolvedProvider) (*core.Record, error) {
-	collection, err := app.GetApp().FindCollectionByNameOrId("_superusers")
+// createUser 创建普通用户账号（users 集合，role=user）。
+func (s *Service) createUser(ctx context.Context, providerName, subject string, profile map[string]any, provider *ResolvedProvider) (*core.Record, error) {
+	collection, err := app.GetApp().FindCollectionByNameOrId("users")
 	if err != nil {
 		return nil, err
 	}
@@ -291,12 +300,13 @@ func (s *Service) createSuperuser(ctx context.Context, providerName, subject str
 		prefix = "oauth2"
 	}
 	if email == "" {
-		// 没有邮箱时构造一个占位邮箱以满足 superuser 字段非空约束。
+		// 没有邮箱时构造一个占位邮箱以满足 email 字段非空约束。
 		email = fmt.Sprintf("%s+%s+%s@certimate.local", prefix, providerName, subject)
 	}
 	record.Set("email", email)
-	// 生成一个用户与 admin 都不知道的随机强密码（管理员可后续修改）。
-	// PocketBase 的密码字段会自动 hash 化。
+	record.Set("name", stringField(profile, provider.NameField))
+	record.Set("role", "user")
+	// 生成一个用户与管理员都不知道的随机强密码（管理员可在用户管理中重置）。
 	password, err := randomPassword(32)
 	if err != nil {
 		return nil, err
@@ -305,7 +315,7 @@ func (s *Service) createSuperuser(ctx context.Context, providerName, subject str
 	record.Set("passwordConfirm", password)
 
 	if err := app.GetApp().Save(record); err != nil {
-		return nil, fmt.Errorf("failed to create superuser: %w", err)
+		return nil, fmt.Errorf("failed to create user: %w", err)
 	}
 	return record, nil
 }

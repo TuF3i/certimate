@@ -11,8 +11,8 @@ import (
 )
 
 type certificateService interface {
-	DownloadCertificate(ctx context.Context, req *dtos.CertificateDownloadReq) (*dtos.CertificateDownloadResp, error)
-	RevokeCertificate(ctx context.Context, req *dtos.CertificateRevokeReq) (*dtos.CertificateRevokeResp, error)
+	DownloadCertificate(ctx context.Context, req *dtos.CertificateDownloadReq, auth *core.Record) (*dtos.CertificateDownloadResp, error)
+	RevokeCertificate(ctx context.Context, req *dtos.CertificateRevokeReq, auth *core.Record) (*dtos.CertificateRevokeResp, error)
 }
 
 type CertificatesHandler struct {
@@ -38,7 +38,7 @@ func (handler *CertificatesHandler) downloadCertificate(e *core.RequestEvent) er
 		return resp.Err(e, err)
 	}
 
-	res, err := handler.service.DownloadCertificate(e.Request.Context(), req)
+	res, err := handler.service.DownloadCertificate(e.Request.Context(), req, e.Auth)
 	if err != nil {
 		return resp.Err(e, err)
 	}
@@ -53,7 +53,7 @@ func (handler *CertificatesHandler) revokeCertificate(e *core.RequestEvent) erro
 		return resp.Err(e, err)
 	}
 
-	res, err := handler.service.RevokeCertificate(e.Request.Context(), req)
+	res, err := handler.service.RevokeCertificate(e.Request.Context(), req, e.Auth)
 	if err != nil {
 		return resp.Err(e, err)
 	}

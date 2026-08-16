@@ -6,6 +6,7 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/tools/router"
 
+	"github.com/certimate-go/certimate/internal/authz"
 	"github.com/certimate-go/certimate/internal/domain/dtos"
 	"github.com/certimate-go/certimate/internal/rest/resp"
 )
@@ -28,6 +29,11 @@ func NewNotificationsHandler(router *router.RouterGroup[*core.RequestEvent], ser
 }
 
 func (handler *NotificationsHandler) test(e *core.RequestEvent) error {
+	// 通知测试涉及发送邮件/机器人消息，仅管理员可用。
+	if !authz.IsAdmin(e.Auth) {
+		return resp.Err(e, authz.ErrForbidden())
+	}
+
 	req := &dtos.NotifyTestPushReq{}
 	if err := e.BindBody(req); err != nil {
 		return resp.Err(e, err)

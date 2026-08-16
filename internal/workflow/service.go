@@ -8,8 +8,10 @@ import (
 	"time"
 
 	"github.com/pocketbase/dbx"
+	"github.com/pocketbase/pocketbase/core"
 
 	"github.com/certimate-go/certimate/internal/app"
+	"github.com/certimate-go/certimate/internal/authz"
 	"github.com/certimate-go/certimate/internal/domain"
 	"github.com/certimate-go/certimate/internal/domain/dtos"
 	"github.com/certimate-go/certimate/internal/settings"
@@ -74,10 +76,16 @@ func (s *WorkflowService) GetStatistics(ctx context.Context) (*dtos.WorkflowStat
 	}, nil
 }
 
-func (s *WorkflowService) StartRun(ctx context.Context, req *dtos.WorkflowStartRunReq) (*dtos.WorkflowStartRunResp, error) {
+func (s *WorkflowService) StartRun(ctx context.Context, req *dtos.WorkflowStartRunReq, auth *core.Record) (*dtos.WorkflowStartRunResp, error) {
 	workflow, err := s.workflowRepo.GetById(ctx, req.WorkflowId)
 	if err != nil {
 		return nil, err
+	}
+
+	// 权限校验：管理员可见全部；普通成员只能运行被授权的工作流。
+	// auth 为 nil 时视为系统级内部调用（如定时调度），不做权限校验。
+	if auth != nil && !authz.CanAccessWorkflow(ctx, auth, workflow) {
+		return nil, authz.ErrForbidden()
 	}
 
 	if req.RunTrigger == domain.WorkflowTriggerTypeManual && (workflow.LastRunStatus == domain.WorkflowRunStatusTypePending || workflow.LastRunStatus == domain.WorkflowRunStatusTypeProcessing) {
@@ -108,10 +116,15 @@ func (s *WorkflowService) StartRun(ctx context.Context, req *dtos.WorkflowStartR
 	return &dtos.WorkflowStartRunResp{RunId: workflowRun.Id}, nil
 }
 
-func (s *WorkflowService) CancelRun(ctx context.Context, req *dtos.WorkflowCancelRunReq) (*dtos.WorkflowCancelRunResp, error) {
+func (s *WorkflowService) CancelRun(ctx context.Context, req *dtos.WorkflowCancelRunReq, auth *core.Record) (*dtos.WorkflowCancelRunResp, error) {
 	workflow, err := s.workflowRepo.GetById(ctx, req.WorkflowId)
 	if err != nil {
 		return nil, err
+	}
+
+	// 权限校验：普通成员只能取消被授权的工作流；auth 为 nil 时视为系统级内部调用。
+	if auth != nil && !authz.CanAccessWorkflow(ctx, auth, workflow) {
+		return nil, authz.ErrForbidden()
 	}
 
 	workflowRun, err := s.workflowRunRepo.GetById(ctx, req.RunId)

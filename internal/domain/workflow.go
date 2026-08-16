@@ -25,6 +25,7 @@ type Workflow struct {
 	LastRunId     string                `db:"lastRunRef"    json:"lastRunId"`
 	LastRunStatus WorkflowRunStatusType `db:"lastRunStatus" json:"lastRunStatus"`
 	LastRunTime   time.Time             `db:"lastRunTime"   json:"lastRunTime"`
+	GrantedUsers  []string              `db:"grantedUsers"  json:"grantedUsers"` // 被授权访问该工作流的普通用户 ID
 }
 
 type WorkflowGraph struct {

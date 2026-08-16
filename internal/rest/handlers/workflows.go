@@ -14,8 +14,8 @@ import (
 
 type workflowService interface {
 	GetStatistics(ctx context.Context) (*dtos.WorkflowStatisticsResp, error)
-	StartRun(ctx context.Context, req *dtos.WorkflowStartRunReq) (*dtos.WorkflowStartRunResp, error)
-	CancelRun(ctx context.Context, req *dtos.WorkflowCancelRunReq) (*dtos.WorkflowCancelRunResp, error)
+	StartRun(ctx context.Context, req *dtos.WorkflowStartRunReq, auth *core.Record) (*dtos.WorkflowStartRunResp, error)
+	CancelRun(ctx context.Context, req *dtos.WorkflowCancelRunReq, auth *core.Record) (*dtos.WorkflowCancelRunResp, error)
 	Shutdown(ctx context.Context)
 }
 
@@ -53,7 +53,7 @@ func (handler *WorkflowsHandler) startRun(e *core.RequestEvent) error {
 		return resp.Err(e, fmt.Errorf("invalid parameters: the value of 'trigger' must be 'manual'"))
 	}
 
-	res, err := handler.service.StartRun(e.Request.Context(), req)
+	res, err := handler.service.StartRun(e.Request.Context(), req, e.Auth)
 	if err != nil {
 		return resp.Err(e, err)
 	}
@@ -66,7 +66,7 @@ func (handler *WorkflowsHandler) cancelRun(e *core.RequestEvent) error {
 	req.WorkflowId = e.Request.PathValue("workflowId")
 	req.RunId = e.Request.PathValue("runId")
 
-	res, err := handler.service.CancelRun(e.Request.Context(), req)
+	res, err := handler.service.CancelRun(e.Request.Context(), req, e.Auth)
 	if err != nil {
 		return resp.Err(e, err)
 	}

@@ -28,7 +28,7 @@ func registerWorkflowJob(workflowSrv *WorkflowService, workflowId string, trigge
 		_, err := workflowSrv.StartRun(context.Background(), &dtos.WorkflowStartRunReq{
 			WorkflowId: workflowId,
 			RunTrigger: domain.WorkflowTriggerTypeScheduled,
-		})
+		}, nil)
 		if err != nil {
 			app.GetLogger().Warn(fmt.Sprintf("failed to start scheduled run for workflow #%s", workflowId), slog.Any("error", err))
 		}

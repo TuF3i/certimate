@@ -79,6 +79,11 @@ func (r *OAuth2LinkRepository) Save(ctx context.Context, link *domain.OAuth2Link
 	record.Set("provider", link.Provider)
 	record.Set("subjectId", link.SubjectId)
 	record.Set("superuserId", link.SuperuserId)
+	if link.TargetCollection != "" {
+		record.Set("targetCollection", link.TargetCollection)
+	} else {
+		record.Set("targetCollection", "_superusers")
+	}
 	if link.UserProfileEmail != "" {
 		record.Set("userProfileEmail", link.UserProfileEmail)
 	}
@@ -123,6 +128,7 @@ func (r *OAuth2LinkRepository) castRecordToModel(record *core.Record) (*domain.O
 		},
 		Provider:          record.GetString("provider"),
 		SubjectId:         record.GetString("subjectId"),
+		TargetCollection:  record.GetString("targetCollection"),
 		SuperuserId:       record.GetString("superuserId"),
 		UserProfileEmail:  record.GetString("userProfileEmail"),
 		UserProfileName:   record.GetString("userProfileName"),

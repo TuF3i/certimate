@@ -9,8 +9,10 @@ import (
 	"strings"
 
 	"github.com/pocketbase/dbx"
+	"github.com/pocketbase/pocketbase/core"
 
 	"github.com/certimate-go/certimate/internal/app"
+	"github.com/certimate-go/certimate/internal/authz"
 	"github.com/certimate-go/certimate/internal/certacme"
 	"github.com/certimate-go/certimate/internal/domain"
 	"github.com/certimate-go/certimate/internal/domain/dtos"
@@ -39,10 +41,16 @@ func (s *CertificateService) InitSchedule(ctx context.Context) error {
 	return nil
 }
 
-func (s *CertificateService) DownloadCertificate(ctx context.Context, req *dtos.CertificateDownloadReq) (*dtos.CertificateDownloadResp, error) {
+func (s *CertificateService) DownloadCertificate(ctx context.Context, req *dtos.CertificateDownloadReq, auth *core.Record) (*dtos.CertificateDownloadResp, error) {
 	certificate, err := s.certificateRepo.GetById(ctx, req.CertificateId)
 	if err != nil {
 		return nil, err
+	}
+
+	// 权限校验：管理员可见全部；普通成员只能访问被授权工作流产生的证书。
+	// auth 为 nil 时视为系统级内部调用，不做权限校验。
+	if auth != nil && !authz.CanAccessCertificate(ctx, auth, certificate, s.getCertificateWorkflow(ctx, certificate)) {
+		return nil, authz.ErrForbidden()
 	}
 
 	canonicalName := strings.Split(certificate.SubjectAltNames, ";")[0]
@@ -216,10 +224,16 @@ func (s *CertificateService) DownloadCertificate(ctx context.Context, req *dtos.
 	return resp, nil
 }
 
-func (s *CertificateService) RevokeCertificate(ctx context.Context, req *dtos.CertificateRevokeReq) (*dtos.CertificateRevokeResp, error) {
+func (s *CertificateService) RevokeCertificate(ctx context.Context, req *dtos.CertificateRevokeReq, auth *core.Record) (*dtos.CertificateRevokeResp, error) {
 	certificate, err := s.certificateRepo.GetById(ctx, req.CertificateId)
 	if err != nil {
 		return nil, err
+	}
+
+	// 权限校验：管理员可见全部；普通成员只能访问被授权工作流产生的证书。
+	// auth 为 nil 时视为系统级内部调用，不做权限校验。
+	if auth != nil && !authz.CanAccessCertificate(ctx, auth, certificate, s.getCertificateWorkflow(ctx, certificate)) {
+		return nil, authz.ErrForbidden()
 	}
 
 	if certificate.ACMEAccountUrl == "" || certificate.ACMECertificateUrl == "" {
@@ -254,6 +268,26 @@ func (s *CertificateService) RevokeCertificate(ctx context.Context, req *dtos.Ce
 	}
 
 	return &dtos.CertificateRevokeResp{}, nil
+}
+
+// getCertificateWorkflow 返回证书归属的工作流（仅包含授权判定所需字段）；
+// 工作流不存在时返回 nil，此时普通成员无法访问该证书。
+func (s *CertificateService) getCertificateWorkflow(ctx context.Context, certificate *domain.Certificate) *domain.Workflow {
+	if certificate == nil || certificate.WorkflowId == "" {
+		return nil
+	}
+
+	record, err := app.GetApp().FindRecordById(domain.CollectionNameWorkflow, certificate.WorkflowId)
+	if err != nil {
+		return nil
+	}
+
+	return &domain.Workflow{
+		Meta: domain.Meta{
+			Id: record.Id,
+		},
+		GrantedUsers: record.GetStringSlice("grantedUsers"),
+	}
 }
 
 func (s *CertificateService) cleanupExpiredCertificates(ctx context.Context) error {
